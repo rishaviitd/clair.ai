@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import Latex from "react-latex-next";
+import { InlineMath, BlockMath } from "react-katex";
 
 /**
  * StructuredNotes component for displaying hierarchical structured notes data
@@ -124,16 +124,15 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
     const renderFormulae = (formula) => {
       if (!formula) return "";
 
-      // If formula already has $ delimiters, return as is
-      if (formula.includes("$") && formula.split("$").length - 1 >= 2) {
-        return formula;
+      // If formula already has $ delimiters, extract the content between them
+      if (formula.includes("$")) {
+        const matches = formula.match(/\$(.*?)\$/);
+        if (matches && matches[1]) {
+          return matches[1];
+        }
       }
 
-      // If formula has LaTeX commands but no $ delimiters, add them
-      if (formula.includes("\\") && !formula.includes("$")) {
-        return `$${formula}$`;
-      }
-
+      // Return the formula as is if no $ delimiters found
       return formula;
     };
 
@@ -167,7 +166,7 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
                   key={idx}
                   className="text-sm text-gray-600 font-mono bg-gray-50 p-1 my-1 rounded"
                 >
-                  <Latex>{renderFormulae(formula)}</Latex>
+                  <InlineMath math={renderFormulae(formula)} />
                 </li>
               ))}
             </ul>
@@ -184,7 +183,7 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
                     remarkPlugins={[remarkMath]}
                     rehypePlugins={[rehypeKatex]}
                   >
-                    {renderFormulae(example)}
+                    {example}
                   </ReactMarkdown>
                 </li>
               ))}
@@ -231,7 +230,7 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
                         remarkPlugins={[remarkMath]}
                         rehypePlugins={[rehypeKatex]}
                       >
-                        {renderFormulae(subDefinition)}
+                        {subDefinition}
                       </ReactMarkdown>
                     </p>
                   )}
@@ -247,7 +246,7 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
                             key={idx}
                             className="text-xs text-gray-600 font-mono bg-gray-50 p-1 my-1 rounded"
                           >
-                            <Latex>{renderFormulae(formula)}</Latex>
+                            <InlineMath math={renderFormulae(formula)} />
                           </li>
                         ))}
                       </ul>
@@ -266,7 +265,7 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
                               remarkPlugins={[remarkMath]}
                               rehypePlugins={[rehypeKatex]}
                             >
-                              {renderFormulae(example)}
+                              {example}
                             </ReactMarkdown>
                           </li>
                         ))}

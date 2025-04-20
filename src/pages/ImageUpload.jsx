@@ -22,7 +22,7 @@ import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
-import Latex from "react-latex-next";
+import { InlineMath, BlockMath } from "react-katex";
 import StructuredNotes from "../components/StructuredNotes";
 import { parseQuizQuestions } from "../service/types/quizSchema";
 
