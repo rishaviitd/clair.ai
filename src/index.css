@@ -1,0 +1,109 @@
+@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import KaTeX styles */
+@import "katex/dist/katex.min.css";
+
+/* Custom loader animation */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* LaTeX display styles */
+.katex {
+  font-size: 1.1em;
+  line-height: 1.5;
+}
+
+.inline .katex {
+  display: inline-block;
+  white-space: normal;
+}
+
+/* Fix for LaTeX overflow in cards */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+
+/* Math content class for direct math rendering */
+.math-content {
+  font-family: serif;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.math-content span.math.inline {
+  display: inline-block;
+  font-style: italic;
+}
+
+/* Use MathJax for direct math markup */
+.MathJax {
+  margin: 0 0.15em;
+}
+
+/* Highlight math delimited by $ */
+.math-content {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Markdown styles */
+.markdown {
+  @apply text-gray-800;
+}
+
+.markdown h1 {
+  @apply text-2xl font-bold mb-4 mt-6;
+}
+
+.markdown h2 {
+  @apply text-xl font-bold mb-3 mt-5;
+}
+
+.markdown h3 {
+  @apply text-lg font-bold mb-2 mt-4;
+}
+
+.markdown p {
+  @apply mb-4;
+}
+
+.markdown ul,
+.markdown ol {
+  @apply pl-5 mb-4;
+}
+
+.markdown ul {
+  @apply list-disc;
+}
+
+.markdown ol {
+  @apply list-decimal;
+}
+
+.markdown blockquote {
+  @apply border-l-4 border-gray-300 pl-4 italic my-4;
+}
+
+.markdown pre {
+  @apply bg-gray-100 p-4 rounded my-4 overflow-auto;
+}
+
+.markdown code {
+  @apply font-mono bg-gray-100 p-1 rounded text-sm;
+}
+
+.markdown pre code {
+  @apply p-0 bg-transparent;
+}
