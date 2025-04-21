@@ -1,5 +1,11 @@
 import React from "react";
-import { FiUpload, FiDatabase, FiList } from "react-icons/fi";
+import {
+  FiUpload,
+  FiDatabase,
+  FiList,
+  FiBookOpen,
+  FiHelpCircle,
+} from "react-icons/fi";
 
 /**
  * Navigation component for switching between app views
@@ -18,8 +24,9 @@ const Navigation = ({
   savedQuizzesCount,
   quizResult,
 }) => {
-  return (
-    <div className="flex border-b border-gray-200 mb-6">
+  // Desktop navigation for larger screens
+  const desktopNavigation = (
+    <div className="hidden md:flex border-b border-gray-200 mb-6">
       <div className="flex overflow-x-auto">
         <button
           className={`px-4 py-2 font-medium text-sm mr-2 flex items-center ${
@@ -65,6 +72,82 @@ const Navigation = ({
         )}
       </div>
     </div>
+  );
+
+  // Mobile bottom tab navigation for smaller screens
+  const mobileNavigation = (
+    <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-50">
+      <div className="flex justify-around">
+        <button
+          className={`flex flex-col items-center justify-center py-2 px-4 flex-1 ${
+            view === "upload" ? "text-green-600" : "text-gray-500"
+          }`}
+          onClick={() => setView("upload")}
+        >
+          <div className="relative">
+            <FiUpload className="text-xl mb-1" />
+          </div>
+          <span className="text-xs">Upload</span>
+        </button>
+        <button
+          className={`flex flex-col items-center justify-center py-2 px-4 flex-1 ${
+            view === "saved" ? "text-green-600" : "text-gray-500"
+          }`}
+          onClick={() => setView("saved")}
+        >
+          <div className="relative">
+            <FiDatabase className="text-xl mb-1" />
+            {savedResultsCount > 0 && (
+              <span className="absolute -top-1 -right-1 text-xs bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                {savedResultsCount}
+              </span>
+            )}
+          </div>
+          <span className="text-xs">Saved</span>
+        </button>
+        <button
+          className={`flex flex-col items-center justify-center py-2 px-4 flex-1 ${
+            view === "quizzes" ? "text-green-600" : "text-gray-500"
+          }`}
+          onClick={() => setView("quizzes")}
+        >
+          <div className="relative">
+            <FiHelpCircle className="text-xl mb-1" />
+            {savedQuizzesCount > 0 && (
+              <span className="absolute -top-1 -right-1 text-xs bg-green-500 text-white rounded-full w-4 h-4 flex items-center justify-center">
+                {savedQuizzesCount}
+              </span>
+            )}
+          </div>
+          <span className="text-xs">Quizzes</span>
+        </button>
+        {quizResult ? (
+          <button
+            className={`flex flex-col items-center justify-center py-2 px-4 flex-1 ${
+              view === "quiz" ? "text-green-600" : "text-gray-500"
+            }`}
+            onClick={() => setView("quiz")}
+          >
+            <div className="relative">
+              <FiBookOpen className="text-xl mb-1" />
+            </div>
+            <span className="text-xs">Quiz</span>
+          </button>
+        ) : (
+          <div className="flex-1"></div>
+        )}
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      {desktopNavigation}
+      {mobileNavigation}
+      <div className="md:hidden h-16 mb-6">
+        {/* Spacer for mobile view to account for fixed bottom navigation */}
+      </div>
+    </>
   );
 };
 

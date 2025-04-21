@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { processImageWithGemini } from "../service/geminiService";
+import { useState, useCallback } from "react";
+import {
+  processImageWithGemini,
+  processBatchImagesWithTwoStepGemini,
+} from "../service/geminiService";
 
 /**
  * Custom hook for handling image uploads and processing with two-step Gemini approach
@@ -104,6 +107,93 @@ const useImageUpload = () => {
   };
 
   /**
+   * Processes all selected images in batch mode with two-step Gemini API
+   * This processes all images together rather than one by one
+   *
+   * @param {Function} onResultsUpdated - Optional callback when results are updated
+   * @returns {Promise<Object>} The batch processing result
+   */
+  const processBatchWithGemini = async (onResultsUpdated) => {
+    if (images.length === 0) {
+      setError("Please upload at least one image");
+      return null;
+    }
+
+    setUploading(true);
+    setError("");
+    const updatedImages = [...images];
+
+    try {
+      // Mark all images as processing
+      updatedImages.forEach((img, index) => {
+        if (img.status !== "complete") {
+          updatedImages[index].status = "processing";
+        }
+      });
+      setImages([...updatedImages]);
+
+      // Get all image files to process in batch
+      const imageFiles = images
+        .filter((img) => img.status !== "complete")
+        .map((img) => img.file);
+
+      if (imageFiles.length === 0) {
+        setError("All images have already been processed");
+        return null;
+      }
+
+      // Call the batch processing service
+      const result = await processBatchImagesWithTwoStepGemini(imageFiles);
+
+      if (result.success) {
+        // Mark all processed images as complete
+        updatedImages.forEach((img, index) => {
+          if (updatedImages[index].status === "processing") {
+            updatedImages[index].status = "complete";
+          }
+        });
+        setImages([...updatedImages]);
+
+        // Store the extracted content from the batch process
+        if (result.originalExtraction) {
+          setExtractedContent(result.originalExtraction);
+        }
+
+        // Add the batch result to our results
+        const updatedResults = [...results, result];
+        setResults(updatedResults);
+
+        // If there's a callback, call it with the updated results
+        if (onResultsUpdated) {
+          onResultsUpdated(updatedResults);
+        }
+
+        return result;
+      } else {
+        setError(`Error processing batch: ${result.error}`);
+
+        // Mark all processing images as error
+        updatedImages.forEach((img, index) => {
+          if (updatedImages[index].status === "processing") {
+            updatedImages[index].status = "error";
+          }
+        });
+        setImages([...updatedImages]);
+
+        return null;
+      }
+    } catch (err) {
+      setError(
+        "An error occurred while batch processing the images. Please try again."
+      );
+      console.error(err);
+      return null;
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  /**
    * Resets the image upload state
    */
   const resetImageUpload = () => {
@@ -141,6 +231,7 @@ const useImageUpload = () => {
     handleImageChange,
     removeImage,
     processWithGemini,
+    processBatchWithGemini,
     resetImageUpload,
     setResultsDirectly,
     setError,

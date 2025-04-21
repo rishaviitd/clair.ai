@@ -1,5 +1,11 @@
 import React from "react";
-import { FiBookOpen, FiImage, FiCheckCircle, FiX } from "react-icons/fi";
+import {
+  FiBookOpen,
+  FiImage,
+  FiCheckCircle,
+  FiX,
+  FiLayers,
+} from "react-icons/fi";
 
 /**
  * Component for uploading and displaying selected images
@@ -10,7 +16,7 @@ import { FiBookOpen, FiImage, FiCheckCircle, FiX } from "react-icons/fi";
  * @param {string} props.error - Error message, if any
  * @param {Function} props.handleImageChange - Function to handle image selection
  * @param {Function} props.removeImage - Function to remove an image
- * @param {Function} props.processWithGemini - Function to process images with Gemini
+ * @param {Function} props.processBatchWithGemini - Function to process all images as a batch
  */
 const ImageUploader = ({
   images,
@@ -18,7 +24,7 @@ const ImageUploader = ({
   error,
   handleImageChange,
   removeImage,
-  processWithGemini,
+  processBatchWithGemini,
 }) => {
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
@@ -94,15 +100,16 @@ const ImageUploader = ({
           </div>
 
           <button
-            onClick={processWithGemini}
+            onClick={processBatchWithGemini}
             disabled={uploading}
             className={`mt-4 px-6 py-2 rounded-md w-full ${
               uploading
                 ? "bg-gray-400 cursor-not-allowed"
-                : "bg-indigo-600 hover:bg-indigo-700"
-            } text-white font-medium transition-colors`}
+                : "bg-green-600 hover:bg-green-700"
+            } text-white font-medium transition-colors flex items-center justify-center`}
           >
-            {uploading ? "Processing..." : "Analyze Notes with Gemini 2.5 Pro"}
+            <FiLayers className="mr-2" />
+            {uploading ? "Processing..." : "Analyze"}
           </button>
         </div>
       )}

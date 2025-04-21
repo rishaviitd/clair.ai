@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { FiEdit } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -14,8 +14,6 @@ import { InlineMath, BlockMath } from "react-katex";
  * @param {Function} props.onGenerateQuiz - Function to call when Generate Quiz button is clicked
  */
 const StructuredNotes = ({ result, onGenerateQuiz }) => {
-  const [debugMode, setDebugMode] = useState(false);
-
   // Component to render a topic with its subtopics and concepts
   const renderTopic = (topic) => {
     if (!topic) return null;
@@ -280,95 +278,6 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
     );
   };
 
-  // Normalize and validate the structured data
-  const normalizeAndValidateData = (resultData) => {
-    // Add debug logging
-    console.log("===== NORMALIZE AND VALIDATE DATA =====");
-    console.log("Raw result object:", resultData);
-    console.log("Has structuredData:", !!resultData.structuredData);
-
-    // Check if result has structuredData
-    if (!resultData.structuredData) {
-      return null;
-    }
-
-    // Try to normalize the data structure if it doesn't match expected format
-    let normalizedData = resultData.structuredData;
-
-    console.log("Normalizing data structure...");
-
-    // If structuredData doesn't have topics property but has other properties that might be topics
-    if (!normalizedData.topics) {
-      console.log("No topics property found, attempting to normalize");
-
-      // Case 1: If structuredData is an array, treat it as topics
-      if (Array.isArray(normalizedData)) {
-        console.log("structuredData is an array, treating as topics");
-        normalizedData = { topics: normalizedData };
-      }
-      // Case 2: If structuredData has properties that might be topics (like subject areas)
-      else if (typeof normalizedData === "object") {
-        // Look for properties that might contain topic arrays
-        const possibleTopicArrays = Object.entries(normalizedData).filter(
-          ([key, value]) =>
-            Array.isArray(value) &&
-            value.length > 0 &&
-            typeof value[0] === "object"
-        );
-
-        console.log(
-          "Possible topic arrays found:",
-          possibleTopicArrays.map(([key]) => key)
-        );
-
-        if (possibleTopicArrays.length > 0) {
-          // Use the first array property as topics
-          const [key, value] = possibleTopicArrays[0];
-          normalizedData = { topics: value };
-          console.log(`Using '${key}' property as topics array`);
-        }
-        // Case 3: The object itself might be a single topic
-        else if (normalizedData.title || normalizedData.name) {
-          console.log(
-            "Object appears to be a single topic, wrapping as topics array"
-          );
-          normalizedData = {
-            topics: [normalizedData],
-          };
-        }
-      }
-    } else {
-      console.log(
-        "Found topics property with length:",
-        normalizedData.topics.length
-      );
-    }
-
-    // If we still don't have a topics array, or it's empty
-    if (
-      !normalizedData.topics ||
-      !Array.isArray(normalizedData.topics) ||
-      normalizedData.topics.length === 0
-    ) {
-      console.log("Failed to normalize data structure");
-      return null;
-    }
-
-    console.log("Final normalized data for rendering:");
-    console.log("Topics count:", normalizedData.topics.length);
-    if (normalizedData.topics.length > 0) {
-      const firstTopic = normalizedData.topics[0];
-      console.log("First topic:", firstTopic.title || firstTopic.name);
-      console.log("First topic has subtopics:", !!firstTopic.subtopics);
-      if (firstTopic.subtopics && firstTopic.subtopics.length > 0) {
-        console.log("Subtopics count:", firstTopic.subtopics.length);
-      }
-    }
-    console.log("===== END NORMALIZE AND VALIDATE DATA =====");
-
-    return normalizedData;
-  };
-
   // Main render function
   const normalizedData = normalizeAndValidateData(result);
 
@@ -376,8 +285,7 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
     return (
       <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md">
         <p className="text-yellow-600">
-          The response doesn't contain properly structured data. Please see the
-          raw response tab.
+          The response doesn't contain properly structured data.
         </p>
       </div>
     );
@@ -391,12 +299,6 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
         </h4>
         <div className="flex gap-2">
           <button
-            onClick={() => setDebugMode(!debugMode)}
-            className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
-          >
-            {debugMode ? "Hide Debug Info" : "Show Debug Info"}
-          </button>
-          <button
             onClick={() => onGenerateQuiz(result)}
             className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors flex items-center"
           >
@@ -405,16 +307,84 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
         </div>
       </div>
 
-      {debugMode && (
-        <div className="mb-4 p-3 bg-gray-100 border border-gray-300 rounded text-xs overflow-auto max-h-60">
-          <h5 className="font-medium mb-1">Structure Debug:</h5>
-          <pre>{JSON.stringify(normalizedData, null, 2)}</pre>
-        </div>
-      )}
-
       {normalizedData.topics.map((topic) => renderTopic(topic))}
     </div>
   );
+};
+
+// Helper function to normalize and validate data
+const normalizeAndValidateData = (resultData) => {
+  // Early return if no data or structuredData
+  if (!resultData || !resultData.structuredData) {
+    return null;
+  }
+
+  // Get the structured data
+  const structuredData = resultData.structuredData;
+
+  // If structured data is already in expected format with topics array
+  if (structuredData.topics && Array.isArray(structuredData.topics)) {
+    return structuredData;
+  }
+
+  // Handle case where structuredData might be the topics array directly
+  if (Array.isArray(structuredData)) {
+    return { topics: structuredData };
+  }
+
+  // Fallback: Create a normalized structure
+  const normalizedData = {
+    topics: [],
+  };
+
+  // Try to extract topics from different possible formats
+  if (
+    structuredData.notes_structure &&
+    Array.isArray(structuredData.notes_structure)
+  ) {
+    normalizedData.topics = structuredData.notes_structure;
+  }
+  // If there's a content field with topics
+  else if (
+    structuredData.content &&
+    Array.isArray(structuredData.content.topics)
+  ) {
+    normalizedData.topics = structuredData.content.topics;
+  }
+  // If there's a chapters or sections field
+  else if (structuredData.chapters && Array.isArray(structuredData.chapters)) {
+    normalizedData.topics = structuredData.chapters;
+  } else if (
+    structuredData.sections &&
+    Array.isArray(structuredData.sections)
+  ) {
+    normalizedData.topics = structuredData.sections;
+  }
+  // If there are concepts directly at the top level
+  else if (structuredData.concepts && Array.isArray(structuredData.concepts)) {
+    // Create a single topic with these concepts
+    normalizedData.topics = [
+      {
+        title: "Main Topic",
+        subtopics: [
+          {
+            title: "Concepts",
+            concepts: structuredData.concepts,
+          },
+        ],
+      },
+    ];
+  }
+
+  // If we couldn't extract topics in a meaningful way
+  if (
+    !Array.isArray(normalizedData.topics) ||
+    normalizedData.topics.length === 0
+  ) {
+    return null;
+  }
+
+  return normalizedData;
 };
 
 export default StructuredNotes;

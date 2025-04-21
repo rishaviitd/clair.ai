@@ -42,9 +42,9 @@ const ExtractedContent = ({ content }) => {
   if (!content) return null;
 
   return (
-    <div className="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-      <h3 className="font-semibold text-lg mb-2 text-yellow-800">
-        Initial Extraction (Step 1)
+    <div className="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold text-lg mb-2 text-gray-800">
+        Extracted Content
       </h3>
       <div className="bg-white p-4 rounded shadow-sm overflow-auto max-h-96">
         <ReactMarkdown
@@ -71,7 +71,8 @@ const ImageUpload = () => {
     extractedContent,
     handleImageChange,
     removeImage,
-    processWithGemini,
+    processBatchWithGemini,
+    resetImageUpload,
     setResultsDirectly,
     setError,
   } = useImageUpload();
@@ -108,12 +109,12 @@ const ImageUpload = () => {
     loadSavedData();
   }, []);
 
-  // Handler for processing images with two-step Gemini and updating saved results
-  const processWithGeminiAndUpdateSaved = async () => {
-    const newResults = await processWithGemini();
-    if (newResults && newResults.length > 0) {
-      // Update saved results with new results
-      setSavedResults((prev) => [...newResults, ...prev]);
+  // Handler for batch processing with two-step Gemini and updating saved results
+  const processBatchWithGeminiAndUpdateSaved = async () => {
+    const result = await processBatchWithGemini();
+    if (result && result.success) {
+      // Update saved results with the new batch result
+      setSavedResults((prev) => [result, ...prev]);
     }
   };
 
@@ -143,31 +144,13 @@ const ImageUpload = () => {
       case "upload":
         return (
           <>
-            <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h2 className="font-bold text-xl mb-2 text-blue-800">
-                Notes Processing
-              </h2>
-              <p className="text-blue-700">
-                This application uses a two-step approach:
-              </p>
-              <ol className="list-decimal ml-5 mt-2 text-blue-700">
-                <li className="mb-1">
-                  Extract raw content from your notes image
-                </li>
-                <li>
-                  Structure the extracted content into organized topics and
-                  concepts
-                </li>
-              </ol>
-            </div>
-
             <ImageUploader
               images={images}
               uploading={uploading}
               error={error}
               handleImageChange={handleImageChange}
               removeImage={removeImage}
-              processWithGemini={processWithGeminiAndUpdateSaved}
+              processBatchWithGemini={processBatchWithGeminiAndUpdateSaved}
             />
 
             {extractedContent && (
@@ -177,7 +160,7 @@ const ImageUpload = () => {
             {results.length > 0 && (
               <div className="mt-6">
                 <h3 className="font-semibold text-lg mb-2 text-green-800">
-                  Structured Result (Step 2)
+                  Analysis Results
                 </h3>
                 <ResultsTabView
                   results={results}
@@ -230,7 +213,7 @@ const ImageUpload = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6 pb-24 md:pb-6">
       <Navigation
         view={view}
         setView={setView}
