@@ -13,7 +13,6 @@ import {
   FiCheckSquare,
 } from "react-icons/fi";
 import {
-  processImageWithGemini,
   getStoredAnalysisResults,
   generateQuizFromNotes,
   getStoredQuizzes,
@@ -38,6 +37,27 @@ import QuizView from "../components/QuizView";
 import useImageUpload from "../hooks/useImageUpload";
 import useQuiz from "../hooks/useQuiz";
 
+// Component for displaying the extracted content from the first step
+const ExtractedContent = ({ content }) => {
+  if (!content) return null;
+
+  return (
+    <div className="mt-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+      <h3 className="font-semibold text-lg mb-2 text-yellow-800">
+        Initial Extraction (Step 1)
+      </h3>
+      <div className="bg-white p-4 rounded shadow-sm overflow-auto max-h-96">
+        <ReactMarkdown
+          remarkPlugins={[remarkMath]}
+          rehypePlugins={[rehypeKatex]}
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    </div>
+  );
+};
+
 const ImageUpload = () => {
   const [view, setView] = useState("upload");
   const [savedResults, setSavedResults] = useState([]);
@@ -48,6 +68,7 @@ const ImageUpload = () => {
     uploading,
     results,
     error,
+    extractedContent,
     handleImageChange,
     removeImage,
     processWithGemini,
@@ -87,7 +108,7 @@ const ImageUpload = () => {
     loadSavedData();
   }, []);
 
-  // Handler for processing images with Gemini and updating saved results
+  // Handler for processing images with two-step Gemini and updating saved results
   const processWithGeminiAndUpdateSaved = async () => {
     const newResults = await processWithGemini();
     if (newResults && newResults.length > 0) {
@@ -122,6 +143,24 @@ const ImageUpload = () => {
       case "upload":
         return (
           <>
+            <div className="mb-6 bg-blue-50 p-4 rounded-lg border border-blue-200">
+              <h2 className="font-bold text-xl mb-2 text-blue-800">
+                Notes Processing
+              </h2>
+              <p className="text-blue-700">
+                This application uses a two-step approach:
+              </p>
+              <ol className="list-decimal ml-5 mt-2 text-blue-700">
+                <li className="mb-1">
+                  Extract raw content from your notes image
+                </li>
+                <li>
+                  Structure the extracted content into organized topics and
+                  concepts
+                </li>
+              </ol>
+            </div>
+
             <ImageUploader
               images={images}
               uploading={uploading}
@@ -131,11 +170,20 @@ const ImageUpload = () => {
               processWithGemini={processWithGeminiAndUpdateSaved}
             />
 
+            {extractedContent && (
+              <ExtractedContent content={extractedContent} />
+            )}
+
             {results.length > 0 && (
-              <ResultsTabView
-                results={results}
-                onGenerateQuiz={handleGenerateQuizAndView}
-              />
+              <div className="mt-6">
+                <h3 className="font-semibold text-lg mb-2 text-green-800">
+                  Structured Result (Step 2)
+                </h3>
+                <ResultsTabView
+                  results={results}
+                  onGenerateQuiz={handleGenerateQuizAndView}
+                />
+              </div>
             )}
           </>
         );

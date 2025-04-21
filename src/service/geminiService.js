@@ -7,7 +7,7 @@
  */
 
 // Re-export services from specialized modules
-export { processImageWithGemini } from "./notesProcessingService";
+export { processImageWithTwoStepGemini as processImageWithGemini } from "./twoStepNotesProcessingService";
 export { generateQuizFromNotes } from "./quizGenerationService";
 export {
   storeAnalysisResult,

@@ -25,11 +25,6 @@ export const notesStructureSchema = {
       items: {
         type: Type.OBJECT,
         properties: {
-          id: {
-            type: Type.STRING,
-            description: "Unique identifier for the topic",
-            nullable: false,
-          },
           name: {
             type: Type.STRING,
             description: "Name of the topic",
@@ -41,11 +36,6 @@ export const notesStructureSchema = {
             items: {
               type: Type.OBJECT,
               properties: {
-                id: {
-                  type: Type.STRING,
-                  description: "Unique identifier for the subtopic",
-                  nullable: false,
-                },
                 name: {
                   type: Type.STRING,
                   description: "Name of the subtopic",
@@ -57,11 +47,6 @@ export const notesStructureSchema = {
                   items: {
                     type: Type.OBJECT,
                     properties: {
-                      id: {
-                        type: Type.STRING,
-                        description: "Unique identifier for the concept",
-                        nullable: false,
-                      },
                       name: {
                         type: Type.STRING,
                         description: "Name of the concept",
@@ -87,40 +72,24 @@ export const notesStructureSchema = {
                           type: Type.STRING,
                         },
                       },
-                      page_numbers: {
-                        type: Type.ARRAY,
-                        description:
-                          "Array of page numbers where the concept appears",
-                        items: {
-                          type: Type.INTEGER,
-                        },
-                      },
-                      source_note_line: {
-                        type: Type.STRING,
-                        description:
-                          "The raw text from the notes where this concept was extracted",
-                      },
                     },
-                    required: ["id", "name"],
+                    required: ["name"],
                     propertyOrdering: [
-                      "id",
                       "name",
                       "definition",
                       "formulae",
                       "examples",
-                      "page_numbers",
-                      "source_note_line",
                     ],
                   },
                 },
               },
-              required: ["id", "name"],
-              propertyOrdering: ["id", "name", "sub_items"],
+              required: ["name"],
+              propertyOrdering: ["name", "sub_items"],
             },
           },
         },
-        required: ["id", "name"],
-        propertyOrdering: ["id", "name", "sub_items"],
+        required: ["name"],
+        propertyOrdering: ["name", "sub_items"],
       },
     },
   },

@@ -1,10 +1,148 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiArrowLeft, FiArrowRight, FiCheckSquare } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { prepareLatexContent } from "../utils/LatexUtils";
+import { jsonrepair } from "jsonrepair";
+
+/**
+ * Emergency JSON repair function specifically for quiz data
+ * Handles the common error patterns seen in Gemini outputs
+ */
+const emergencyRepairQuizJson = (jsonText) => {
+  if (!jsonText) return null;
+
+  try {
+    // First try to parse it directly (maybe it's already valid)
+    return JSON.parse(jsonText);
+  } catch (e) {
+    console.log("Initial JSON parse failed, attempting repairs:", e.message);
+
+    // Step 1: Remove any markdown code blocks and extract just the JSON
+    let cleaned = jsonText;
+    const codeBlockMatch = jsonText.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      cleaned = codeBlockMatch[1].trim();
+    }
+
+    // Step 2: Ensure we're working with an array that starts with [ and ends with ]
+    if (cleaned.includes("[") && cleaned.includes("]")) {
+      const startIdx = cleaned.indexOf("[");
+      const endIdx = cleaned.lastIndexOf("]") + 1;
+      if (startIdx >= 0 && endIdx > startIdx) {
+        cleaned = cleaned.substring(startIdx, endIdx);
+      }
+    }
+
+    // Step 3: Fix the common backslashed property names issue (the main problem)
+    // This regex specifically targets the pattern: "id\": and \"type":
+    cleaned = cleaned
+      // Fix property name with escaped quote: "id\":
+      .replace(/"([a-zA-Z0-9_]+)\\"/g, '"$1"')
+
+      // Fix property value with escaped quote: \"value"
+      .replace(/\\+"([^"]+)"/g, '"$1"')
+
+      // General cleanup of inconsistent escaping
+      .replace(/\\+"/g, '"')
+      .replace(/"\s*\\/g, '"')
+
+      // Fix options array with escaped brackets
+      .replace(/\\+\[/g, "[")
+      .replace(/\\+\]/g, "]")
+
+      // Fix missing colons after property names
+      .replace(/"([a-zA-Z0-9_]+)"\s+"/g, '"$1":"')
+
+      // Fix missing quotes around property names
+      .replace(/\{([^{]*?)([a-zA-Z0-9_]+)(\s*:)/g, '{$1"$2"$3')
+
+      // Fix trailing commas
+      .replace(/,\s*\}/g, "}")
+      .replace(/,\s*\]/g, "]");
+
+    // Step 4: Try to parse with standard jsonrepair library
+    try {
+      const repaired = jsonrepair(cleaned);
+      return JSON.parse(repaired);
+    } catch (repairError) {
+      console.error("JSON repair failed:", repairError.message);
+
+      // Step 5: Last resort - try to extract individual questions
+      const questions = [];
+      const questionRegex = /\{[^{]*?"question":[^}]*?\}/g;
+      const matches = cleaned.match(questionRegex) || [];
+
+      for (const match of matches) {
+        try {
+          // Add very aggressive fixing for each individual question
+          let fixedMatch = match
+            .replace(/\\"/g, '"') // Replace all \" with "
+            .replace(/"\s*([a-zA-Z0-9_]+)\s*":/g, '"$1":') // Fix "prop ":
+            .replace(/:\s*"([^"]+?)\\"/g, ':"$1"') // Fix :"value\"
+            .replace(/([{,])\s*([a-zA-Z0-9_]+):/g, '$1"$2":'); // Add quotes around property names
+
+          // Ensure it ends with a closing brace
+          if (!fixedMatch.endsWith("}")) {
+            fixedMatch += "}";
+          }
+
+          const parsedQuestion = JSON.parse(fixedMatch);
+          if (parsedQuestion.question) {
+            questions.push(parsedQuestion);
+          }
+        } catch (e) {
+          console.warn("Failed to parse individual question:", e.message);
+        }
+      }
+
+      if (questions.length > 0) {
+        console.log(`Emergency repair extracted ${questions.length} questions`);
+        return questions;
+      }
+
+      // If all else fails
+      return null;
+    }
+  }
+};
+
+/**
+ * Prepares math content from quiz for rendering
+ * This function ensures proper formatting of math expressions
+ */
+const prepareMathContent = (text) => {
+  if (!text) return "";
+
+  let processed = text;
+
+  // First, check if text already has math delimiters
+  const hasMathDelimiters = text.includes("$");
+
+  if (!hasMathDelimiters) {
+    // If no math delimiters are found, no processing needed
+    return text;
+  }
+
+  // Fix common issues with math delimiters
+  processed = processed
+    // Ensure spaces around block math
+    .replace(/\$\$(.*?)\$\$/g, "\n\n$$\n$1\n$$\n\n")
+
+    // Fix common escaping issues with backslashes in math
+    .replace(/\\\\/g, "\\")
+
+    // Fix fraction commands
+    .replace(/\\frac\s*\{([^}]*)\}\s*\{([^}]*)\}/g, "\\frac{$1}{$2}")
+
+    // Ensure delimiters have proper spacing
+    .replace(/(\w)\$/g, "$1 $")
+    .replace(/\$(\w)/g, "$ $1");
+
+  return processed;
+};
 
 /**
  * Component for displaying and interacting with quizzes
@@ -36,6 +174,23 @@ const QuizView = ({
   getQuizScore,
 }) => {
   const [debugMode, setDebugMode] = useState(false);
+  const [repairedQuestions, setRepairedQuestions] = useState(null);
+
+  // Try to repair JSON on component mount or when quizResult changes
+  useEffect(() => {
+    if (
+      quizResult &&
+      quizResult.quiz &&
+      (!quizResult.quizQuestions || quizResult.quizQuestions.length === 0)
+    ) {
+      console.log("Attempting emergency JSON repair for quiz");
+      const repaired = emergencyRepairQuizJson(quizResult.quiz);
+      if (repaired && Array.isArray(repaired) && repaired.length > 0) {
+        console.log(`Successfully repaired ${repaired.length} questions`);
+        setRepairedQuestions(repaired);
+      }
+    }
+  }, [quizResult]);
 
   // If quiz is still loading
   if (!quizResult) {
@@ -47,14 +202,36 @@ const QuizView = ({
     );
   }
 
+  // Use repaired questions if available, otherwise use the original
+  const questions = repairedQuestions || quizResult.quizQuestions;
+
   // Verify that the questions are valid
   const hasValidQuizQuestions =
-    quizResult.quizQuestions &&
-    Array.isArray(quizResult.quizQuestions) &&
-    quizResult.quizQuestions.length > 0;
+    questions && Array.isArray(questions) && questions.length > 0;
 
   // If quiz doesn't have structured questions, show raw text
   if (!hasValidQuizQuestions) {
+    // Try to extract raw JSON from the quiz if available
+    let rawJsonContent = null;
+    if (quizResult.quiz) {
+      const jsonBlockMatch = quizResult.quiz.match(
+        /```(?:json)?\s*([\s\S]*?)\s*```/
+      );
+      if (jsonBlockMatch) {
+        rawJsonContent = jsonBlockMatch[1].trim();
+      } else if (
+        quizResult.quiz.includes("[") &&
+        quizResult.quiz.includes("]")
+      ) {
+        // Try to extract just the JSON array
+        const startIdx = quizResult.quiz.indexOf("[");
+        const endIdx = quizResult.quiz.lastIndexOf("]") + 1;
+        if (startIdx >= 0 && endIdx > startIdx) {
+          rawJsonContent = quizResult.quiz.substring(startIdx, endIdx);
+        }
+      }
+    }
+
     return (
       <div className="bg-white p-6 rounded-lg shadow-md">
         <div className="flex justify-between items-center mb-4">
@@ -70,12 +247,19 @@ const QuizView = ({
             raw quiz content:
           </p>
 
-          <div className="mt-3">
+          <div className="mt-3 flex space-x-2">
             <button
               onClick={() => setDebugMode(!debugMode)}
               className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
             >
               {debugMode ? "Hide Debug Info" : "Show Debug Info"}
+            </button>
+
+            <button
+              onClick={() => resetQuiz()}
+              className="px-2 py-1 text-xs bg-indigo-600 text-white rounded hover:bg-indigo-700"
+            >
+              Reset Quiz
             </button>
           </div>
 
@@ -85,16 +269,54 @@ const QuizView = ({
               <pre className="overflow-auto max-h-60 bg-gray-50 p-2 rounded">
                 {JSON.stringify(quizResult, null, 2)}
               </pre>
+
+              {rawJsonContent && (
+                <>
+                  <h5 className="font-medium mb-1 mt-3">Raw JSON Content:</h5>
+                  <pre className="overflow-auto max-h-60 bg-gray-50 p-2 rounded">
+                    {rawJsonContent}
+                  </pre>
+                  <div className="mt-2">
+                    <button
+                      onClick={() => {
+                        try {
+                          const repaired = jsonrepair(rawJsonContent);
+                          alert(
+                            "JSON repaired successfully! You can copy it from the text area below."
+                          );
+                          navigator.clipboard.writeText(repaired).then(() => {
+                            alert("Repaired JSON copied to clipboard!");
+                          });
+                        } catch (err) {
+                          alert("Failed to repair JSON: " + err.message);
+                        }
+                      }}
+                      className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                    >
+                      Try to repair and copy JSON
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
         <div className="mt-4 p-5 bg-white border border-gray-200 rounded-md shadow-sm">
-          <ReactMarkdown
-            remarkPlugins={[remarkMath]}
-            rehypePlugins={[rehypeKatex]}
-          >
-            {quizResult.quiz || "No quiz content available."}
-          </ReactMarkdown>
+          {quizResult.quiz ? (
+            <ReactMarkdown
+              remarkPlugins={[remarkMath]}
+              rehypePlugins={[rehypeKatex]}
+            >
+              {quizResult.quiz || "No quiz content available."}
+            </ReactMarkdown>
+          ) : (
+            <div className="p-4 text-center text-gray-700">
+              <p>
+                No quiz content could be generated. Please try again with a
+                different analysis result.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -102,7 +324,6 @@ const QuizView = ({
 
   try {
     // Attempt to render the interactive quiz using structured data
-    const questions = quizResult.quizQuestions;
     const currentQuestion = questions[currentQuestionIndex] || questions[0];
 
     // Safety check for current question
@@ -202,7 +423,7 @@ const QuizView = ({
                   remarkPlugins={[remarkMath]}
                   rehypePlugins={[rehypeKatex]}
                 >
-                  {prepareLatexContent(currentQuestion.question)}
+                  {prepareMathContent(currentQuestion.question)}
                 </ReactMarkdown>
               </h4>
 
@@ -246,7 +467,7 @@ const QuizView = ({
                               remarkPlugins={[remarkMath]}
                               rehypePlugins={[rehypeKatex]}
                             >
-                              {prepareLatexContent(
+                              {prepareMathContent(
                                 option.text || "No option text available"
                               )}
                             </ReactMarkdown>
@@ -292,7 +513,7 @@ const QuizView = ({
                       remarkPlugins={[remarkMath]}
                       rehypePlugins={[rehypeKatex]}
                     >
-                      {prepareLatexContent(
+                      {prepareMathContent(
                         currentQuestion.type === "mcq"
                           ? currentQuestion.explanation
                           : currentQuestion.sampleAnswer

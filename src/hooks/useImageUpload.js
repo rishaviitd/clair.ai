@@ -2,7 +2,7 @@ import { useState } from "react";
 import { processImageWithGemini } from "../service/geminiService";
 
 /**
- * Custom hook for handling image uploads and processing with Gemini
+ * Custom hook for handling image uploads and processing with two-step Gemini approach
  * @returns {Object} Image upload state and handlers
  */
 const useImageUpload = () => {
@@ -10,6 +10,7 @@ const useImageUpload = () => {
   const [uploading, setUploading] = useState(false);
   const [results, setResults] = useState([]);
   const [error, setError] = useState("");
+  const [extractedContent, setExtractedContent] = useState(""); // Store the extracted content from step 1
 
   /**
    * Handles file selection and creates image previews
@@ -42,7 +43,7 @@ const useImageUpload = () => {
   };
 
   /**
-   * Processes selected images with Gemini API
+   * Processes selected images with the two-step Gemini API approach
    * @param {Function} onResultsUpdated - Optional callback when results are updated
    * @returns {Promise<Array>} The results from processing
    */
@@ -70,6 +71,11 @@ const useImageUpload = () => {
         if (result.success) {
           newResults.push(result);
           updatedImages[i].status = "complete";
+
+          // Store the extracted content from the first step if available
+          if (result.originalExtraction) {
+            setExtractedContent(result.originalExtraction);
+          }
 
           // If there's a callback, call it with the updated results
           if (onResultsUpdated) {
@@ -106,6 +112,7 @@ const useImageUpload = () => {
     setImages([]);
     setResults([]);
     setError("");
+    setExtractedContent("");
   };
 
   /**
@@ -114,6 +121,15 @@ const useImageUpload = () => {
    */
   const setResultsDirectly = (newResults) => {
     setResults(newResults);
+
+    // If this is a two-step result, also set the extracted content
+    if (
+      newResults &&
+      newResults.length > 0 &&
+      newResults[0].originalExtraction
+    ) {
+      setExtractedContent(newResults[0].originalExtraction);
+    }
   };
 
   return {
@@ -121,6 +137,7 @@ const useImageUpload = () => {
     uploading,
     results,
     error,
+    extractedContent,
     handleImageChange,
     removeImage,
     processWithGemini,

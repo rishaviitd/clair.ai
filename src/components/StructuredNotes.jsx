@@ -114,11 +114,6 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
     const subconcepts = Array.isArray(concept.subconcepts)
       ? concept.subconcepts
       : [];
-    const pageNumbers = Array.isArray(concept.page_numbers)
-      ? concept.page_numbers
-      : concept.page_numbers
-      ? [concept.page_numbers]
-      : [];
 
     // Helper function to improve LaTeX rendering
     const renderFormulae = (formula) => {
@@ -279,9 +274,6 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
         )}
 
         <div className="mt-2 text-xs text-gray-400 flex justify-between">
-          <span>
-            Page: {pageNumbers.length > 0 ? pageNumbers.join(", ") : "N/A"}
-          </span>
           <span>ID: {conceptId}</span>
         </div>
       </div>

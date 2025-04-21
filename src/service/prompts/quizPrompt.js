@@ -3,46 +3,42 @@
  */
 
 // Quiz Generation Prompt
-export const QUIZ_GENERATION_PROMPT = `Generate a structured quiz based on the provided educational notes. The quiz should test students' understanding of the concepts, formulas, and applications presented in the notes.
+export const QUIZ_GENERATION_PROMPT = `Generate a quiz with 10 questions (8 multiple choice, 2 subjective) based on the notes.
 
-I need you to return a valid JSON array of questions. Do not include any explanatory text, markdown code blocks, or additional formatting. The response should start with [ and end with ].
+Return a VALID JSON array of questions. DO NOT include any backslashes before quotes in property names or values.
 
-REQUIRED FORMAT:
+CORRECT JSON FORMAT (follow this exactly):
 [
   {
     "id": "q1",
     "type": "mcq",
-    "question": "What is the value of X in equation Y?",
+    "question": "What is the average rate of change?",
     "options": [
-      {"id": "a", "text": "Option A text"},
-      {"id": "b", "text": "Option B text"},
-      {"id": "c", "text": "Option C text"},
-      {"id": "d", "text": "Option D text"}
+      {"id": "a", "text": "The change in y divided by the change in x"},
+      {"id": "b", "text": "The slope of a secant line"},
+      {"id": "c", "text": "The instantaneous rate of change"},
+      {"id": "d", "text": "The area under a curve"}
     ],
     "correctAnswer": "b",
-    "explanation": "Explanation why option B is correct",
-    "topic": "Topic name"
+    "explanation": "The average rate of change is represented by the slope of the secant line connecting two points on a curve.",
+    "topic": "Differentiation"
   },
   {
     "id": "q2",
     "type": "subjective",
-    "question": "Explain concept Z",
-    "sampleAnswer": "Sample answer explaining Z",
-    "topic": "Topic name"
+    "question": "Explain the concept of average rate of change with respect to a curve.",
+    "sampleAnswer": "The average rate of change between two points on a curve is the slope of the secant line connecting those points. It represents the average change in the dependent variable (y) per unit change in the independent variable (x) over that interval.",
+    "topic": "Differentiation"
   }
 ]
 
-IMPORTANT: Follow these exact format requirements:
-- Use the exact field names shown above
-- For multiple choice questions, the "options" field MUST be an array of objects, each with "id" and "text" fields
-- The "correctAnswer" field must reference an option id
-- Each question must have a unique "id" value
-- Include 7 multiple choice and 3 subjective questions
+IMPORTANT - DO NOT INCLUDE BACKSLASHES (\) BEFORE QUOTES IN JSON:
+✓ CORRECT: "id": "q1"
+✗ WRONG: "id\": "q1"
+✗ WRONG: \"id": "q1\"
 
-Content guidelines:
-- Ensure questions cover all main topics from the notes
-- Make questions progressively more challenging
-- Include at least 2 questions that test mathematical problem-solving
-- For math expressions, use proper LaTeX notation (e.g., $\\frac{1}{2}$ for fractions)
+For MATH FORMULAS in questions/answers, use standard markdown notation:
+* Inline math: $formula$ (example: $x^2 + y^2 = z^2$)
+* Block math: $$formula$$ (example: $$\frac{dy}{dx}$$)
 
 The structured notes data is provided here:`;

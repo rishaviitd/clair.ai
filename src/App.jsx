@@ -3,15 +3,17 @@ import ImageUpload from "./pages/ImageUpload";
 import NotFound from "./pages/NotFound";
 
 function App() {
-  // Simple router to handle 404 cases
+  // Simple router to handle paths
   const path = window.location.pathname;
 
-  // Render the main app for the root path, otherwise show 404
+  // Render the appropriate component based on the path
   const getComponent = () => {
-    if (path === "/" || path === "") {
-      return <ImageUpload />;
-    } else {
-      return <NotFound />;
+    switch (path) {
+      case "/":
+      case "":
+        return <ImageUpload />;
+      default:
+        return <NotFound />;
     }
   };
 

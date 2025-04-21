@@ -4,6 +4,66 @@ import {
   getStoredQuizzes,
 } from "../service/geminiService";
 import { parseQuizQuestions } from "../service/types/quizSchema";
+import { jsonrepair } from "jsonrepair";
+
+/**
+ * Emergency repair function for quiz JSON
+ * @param {string} jsonString - The potentially malformed JSON string
+ * @returns {Array|null} - Array of questions or null
+ */
+const emergencyRepairQuizJson = (jsonString) => {
+  if (!jsonString) return null;
+
+  try {
+    // First try standard repair
+    const repaired = jsonrepair(jsonString);
+    return JSON.parse(repaired);
+  } catch (e) {
+    console.log(
+      "Standard repair failed, attempting emergency fixes:",
+      e.message
+    );
+
+    // Extract quiz content from markdown blocks if present
+    let cleaned = jsonString;
+    const codeBlockMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (codeBlockMatch) {
+      cleaned = codeBlockMatch[1].trim();
+    }
+
+    // Extract JSON array
+    if (cleaned.includes("[") && cleaned.includes("]")) {
+      const startIdx = cleaned.indexOf("[");
+      const endIdx = cleaned.lastIndexOf("]") + 1;
+      if (startIdx >= 0 && endIdx > startIdx) {
+        cleaned = cleaned.substring(startIdx, endIdx);
+      }
+    }
+
+    // Fix the specific escaping issues that break parsing
+    cleaned = cleaned
+      // Fix property with escaped quotes: "id\":
+      .replace(/"([a-zA-Z0-9_]+)\\"/g, '"$1"')
+      // Fix values with escaped quotes: \"value"
+      .replace(/\\+"([^"]+)"/g, '"$1"')
+      // General cleanup of escaped quotes
+      .replace(/\\+"/g, '"')
+      // Fix object/array brackets
+      .replace(/\\+\{/g, "{")
+      .replace(/\\+\}/g, "}")
+      .replace(/\\+\[/g, "[")
+      .replace(/\\+\]/g, "]");
+
+    try {
+      // Try to parse after our fixes
+      return JSON.parse(cleaned);
+    } catch (error) {
+      // If all else fails, return null
+      console.error("Emergency repair failed:", error.message);
+      return null;
+    }
+  }
+};
 
 /**
  * Custom hook for managing quiz state and interactions
@@ -54,33 +114,75 @@ const useQuiz = () => {
     setQuizCompleted(false);
 
     try {
+      console.log(
+        "Starting quiz generation for:",
+        result.fileName || "Analysis result"
+      );
       const quiz = await generateQuizFromNotes(result);
+
       if (quiz.success) {
+        console.log("Quiz generation successful");
+
         // Process the quiz questions if they exist
-        if (
-          (!quiz.quizQuestions || quiz.quizQuestions.length === 0) &&
-          quiz.quiz
-        ) {
-          try {
-            // Use the Zod parseQuizQuestions function
-            const parsedQuestions = parseQuizQuestions(quiz.quiz);
-            if (parsedQuestions.length > 0) {
-              quiz.quizQuestions = parsedQuestions;
+        if (!quiz.quizQuestions || quiz.quizQuestions.length === 0) {
+          console.log(
+            "No structured questions found, attempting to parse from quiz text"
+          );
+
+          if (quiz.quiz) {
+            try {
+              // First try our emergency repair function
+              console.log("Attempting emergency JSON repair");
+              const emergencyRepaired = emergencyRepairQuizJson(quiz.quiz);
+
+              if (
+                emergencyRepaired &&
+                Array.isArray(emergencyRepaired) &&
+                emergencyRepaired.length > 0
+              ) {
+                console.log(
+                  `Emergency repair successful, extracted ${emergencyRepaired.length} questions`
+                );
+                quiz.quizQuestions = emergencyRepaired;
+              } else {
+                // Fall back to Zod parseQuizQuestions if emergency repair fails
+                console.log("Emergency repair failed, trying Zod parser");
+                const parsedQuestions = parseQuizQuestions(quiz.quiz);
+
+                if (parsedQuestions && parsedQuestions.length > 0) {
+                  console.log(
+                    `Successfully parsed ${parsedQuestions.length} questions from quiz text`
+                  );
+                  quiz.quizQuestions = parsedQuestions;
+                } else {
+                  console.warn(
+                    "Could not parse structured questions from quiz text"
+                  );
+                }
+              }
+            } catch (parseError) {
+              console.warn("Error parsing quiz questions:", parseError.message);
+              // Don't throw - we'll display the raw quiz text as fallback
             }
-          } catch (err) {
-            console.warn("Error parsing quiz questions:", err);
+          } else {
+            console.warn("No quiz text available");
           }
         }
 
+        // Even if we couldn't parse structured questions, we still set the quiz result
+        // The QuizView component will display it as raw text
         setQuizResult(quiz);
         return quiz;
       } else {
-        setError(`Failed to generate quiz: ${quiz.error}`);
+        const errorMsg = `Failed to generate quiz: ${quiz.error}`;
+        console.error(errorMsg);
+        setError(errorMsg);
         return null;
       }
     } catch (err) {
-      setError("An error occurred while generating the quiz");
-      console.error(err);
+      const errorMsg = `Error generating quiz: ${err.message}`;
+      console.error(errorMsg, err);
+      setError(errorMsg);
       return null;
     } finally {
       setGeneratingQuiz(false);

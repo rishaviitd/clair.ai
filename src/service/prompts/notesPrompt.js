@@ -10,21 +10,16 @@ IMPORTANT: Your response MUST be in valid, properly formatted JSON that follows 
 {
   "notes_structure": [
     {
-      "id": "topic_id",
       "name": "Topic Name",
       "sub_items": [
         {
-          "id": "subtopic_id",
           "name": "Subtopic Name",
           "sub_items": [
             {
-              "id": "concept_id",
               "name": "Concept Name",
               "definition": "Concept definition or explanation",
               "formulae": ["Formula 1 in LaTeX", "Formula 2 in LaTeX"],
-              "examples": ["Example 1", "Example 2"],
-              "page_numbers": [1, 2],
-              "source_note_line": "Original text from notes"
+              "examples": ["Example 1", "Example 2"]
             }
           ]
         }
@@ -40,6 +35,7 @@ Follow these guidelines for structured extraction:
 - Correct obvious OCR errors only if they distort the intended meaning (e.g., "siin" → "sin")
 - Preserve student-specific spelling and shorthand (e.g., "+ve" for "positive")
 
+
 2. Heading Detection & Structuring
 - Identify hierarchical structure using visual cues like text size, underlining, indentation
 - Use a 3-level hierarchy:
@@ -47,18 +43,13 @@ Follow these guidelines for structured extraction:
   * Level 2: "name" field for Subtopics (specific categories like "Trigonometric Identities")
   * Level 3: "name" field for Concepts (individual learning points like "Sine Rule")
 
+
 3. Concept Fields
 - "definition": Exact text explaining the concept
 - "formulae": Array of mathematical expressions or identities in LaTeX format
 - "examples": Array of specific instances or applications (include [] if none exist)
-- "page_numbers": Array of page numbers where the concept appears
-- "source_note_line": The raw text from which the concept was extracted
 
-4. ID Formatting
-- Generate "id" fields by slugifying names: lowercase, replace spaces with underscores, remove non-alphanumeric characters
-- Example: "Sine Rule" becomes "sine_rule"
-
-5. Content Categorization
+4. Content Categorization
 - Formulas: Mathematical statements with variables (not purely numerical calculations)
 - Examples: Specific applications with numerical values or step-by-step workings
 
