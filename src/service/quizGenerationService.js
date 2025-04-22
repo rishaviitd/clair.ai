@@ -4,7 +4,7 @@
 
 import { storeQuizResult } from "./storageService";
 import { QUIZ_GENERATION_PROMPT } from "./prompts/quizPrompt";
-import { parseQuizQuestions } from "./types/quizSchema";
+import { parseQuestions } from "../utils/questionParser";
 
 /**
  * Generates a quiz based on analyzed notes data
@@ -25,7 +25,9 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
 
     if (
       !analysisResult ||
-      (!analysisResult.structuredData && !analysisResult.description)
+      (!analysisResult.structuredData &&
+        !analysisResult.description &&
+        !analysisResult.markdown)
     ) {
       throw new Error("No valid analysis data provided for quiz generation");
     }
@@ -38,7 +40,10 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
     console.log(`Using Gemini model: ${modelVersion}`);
 
     // Prepare input data for the quiz generation
-    const inputData = analysisResult.structuredData
+    // First try markdown, then fallback to other formats for backward compatibility
+    const inputData = analysisResult.markdown
+      ? analysisResult.markdown
+      : analysisResult.structuredData
       ? JSON.stringify(analysisResult.structuredData, null, 2)
       : analysisResult.description;
 
@@ -62,7 +67,6 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
     };
 
     // We're intentionally NOT using the schema to simplify responses
-    console.log("Using simplified quiz format without schema constraints");
 
     console.log("Sending request to Gemini API...");
 
@@ -88,13 +92,12 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
 
       // Log response for debugging
       console.log("===== GEMINI API RESPONSE =====");
-      console.log(
-        "Response structure:",
-        JSON.stringify(Object.keys(data)).substring(0, 200)
-      );
+      console.log(data.candidates[0].content.parts[0].text);
 
       // Extract text content from the response
       let rawQuizText = "";
+      let rawApiResponse = JSON.stringify(data, null, 2);
+
       if (
         data.candidates &&
         data.candidates[0] &&
@@ -103,21 +106,14 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
       ) {
         rawQuizText = data.candidates[0].content.parts[0].text;
         console.log("Text response received");
-        console.log(
-          "Text sample (first 100 chars):",
-          rawQuizText.substring(0, 100)
-        );
       } else {
         console.warn("No text content found in API response");
-        console.log("Full response:", JSON.stringify(data).substring(0, 500));
       }
 
-      // Use Zod schema to parse and normalize the quiz questions
+      // Use our simple parser to parse the quiz questions
       console.log("Attempting to parse quiz questions...");
-      const structuredQuestions = parseQuizQuestions(rawQuizText);
-      console.log(
-        `Parsed ${structuredQuestions.length} structured questions using Zod schema`
-      );
+      const structuredQuestions = parseQuestions(rawQuizText);
+      console.log(`Parsed ${structuredQuestions.length} structured questions`);
 
       // Create result object
       const quizResult = {
@@ -131,6 +127,7 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
 
       // Store the raw response for troubleshooting
       quizResult.rawText = rawQuizText;
+      quizResult.rawApiResponse = rawApiResponse;
 
       // Log what we're returning
       console.log(

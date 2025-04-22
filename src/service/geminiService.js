@@ -23,3 +23,6 @@ export {
 export { Type as SchemaType } from "./types/quizSchema";
 export { quizQuestionsSchema } from "./types/quizSchema";
 export { notesStructureSchema } from "./types/notesSchema";
+
+// Re-export the simple question parser for use in components
+export { parseQuestions } from "../utils/questionParser";

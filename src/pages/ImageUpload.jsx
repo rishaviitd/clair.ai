@@ -11,11 +11,13 @@ import {
   FiArrowRight,
   FiArrowLeft,
   FiCheckSquare,
+  FiCode,
 } from "react-icons/fi";
 import {
   getStoredAnalysisResults,
   generateQuizFromNotes,
   getStoredQuizzes,
+  parseQuestions,
 } from "../service/geminiService";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -23,7 +25,6 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 import StructuredNotes from "../components/StructuredNotes";
-import { parseQuizQuestions } from "../service/types/quizSchema";
 
 // Import components
 import Navigation from "../components/Navigation";
@@ -32,6 +33,7 @@ import ResultsTabView from "../components/ResultsTabView";
 import SavedResults from "../components/SavedResults";
 import SavedQuizzes from "../components/SavedQuizzes";
 import QuizView from "../components/QuizView";
+import RawResponseView from "../pages/RawResponseView";
 
 // Import hooks
 import useImageUpload from "../hooks/useImageUpload";
@@ -47,20 +49,16 @@ const ExtractedContent = ({ content }) => {
         Extracted Content
       </h3>
       <div className="bg-white p-4 rounded shadow-sm overflow-auto max-h-96">
-        <ReactMarkdown
-          remarkPlugins={[remarkMath]}
-          rehypePlugins={[rehypeKatex]}
-        >
-          {content}
-        </ReactMarkdown>
+        <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
       </div>
     </div>
   );
 };
 
-const ImageUpload = () => {
-  const [view, setView] = useState("upload");
+const ImageUpload = ({ initialView = "upload" }) => {
+  const [view, setView] = useState(initialView);
   const [savedResults, setSavedResults] = useState([]);
+  const [rawResponse, setRawResponse] = useState(null);
 
   // Use the custom hooks
   const {
@@ -122,6 +120,8 @@ const ImageUpload = () => {
   const handleGenerateQuizAndView = async (result) => {
     const quiz = await handleGenerateQuiz(result);
     if (quiz) {
+      // Store the raw response text
+      setRawResponse(quiz.rawText || "No raw response available");
       setView("quiz");
     }
   };
@@ -135,6 +135,19 @@ const ImageUpload = () => {
   // Handler for loading a saved quiz
   const handleLoadQuiz = (quiz) => {
     loadQuiz(quiz);
+    setView("quiz");
+  };
+
+  // Handler for viewing raw response
+  const handleViewRawResponse = () => {
+    if (quizResult) {
+      setRawResponse(quizResult);
+      setView("raw-response");
+    }
+  };
+
+  // Handler for going back from raw response view
+  const handleBackFromRawResponse = () => {
     setView("quiz");
   };
 
@@ -192,18 +205,36 @@ const ImageUpload = () => {
 
       case "quiz":
         return (
-          <QuizView
-            quizResult={quizResult}
-            currentQuestionIndex={currentQuestionIndex}
-            userAnswers={userAnswers}
-            showAnswer={showAnswer}
-            quizCompleted={quizCompleted}
-            handleNextQuestion={handleNextQuestion}
-            handlePreviousQuestion={handlePreviousQuestion}
-            handleAnswerSelect={handleAnswerSelect}
-            toggleShowAnswer={toggleShowAnswer}
-            resetQuiz={resetQuiz}
-            getQuizScore={getQuizScore}
+          <>
+            <QuizView
+              quizResult={quizResult}
+              currentQuestionIndex={currentQuestionIndex}
+              userAnswers={userAnswers}
+              showAnswer={showAnswer}
+              quizCompleted={quizCompleted}
+              handleNextQuestion={handleNextQuestion}
+              handlePreviousQuestion={handlePreviousQuestion}
+              handleAnswerSelect={handleAnswerSelect}
+              toggleShowAnswer={toggleShowAnswer}
+              resetQuiz={resetQuiz}
+              getQuizScore={getQuizScore}
+            />
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={handleViewRawResponse}
+                className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
+              >
+                <FiCode className="mr-2" /> View Raw Response
+              </button>
+            </div>
+          </>
+        );
+
+      case "raw-response":
+        return (
+          <RawResponseView
+            rawResponse={rawResponse}
+            onBack={handleBackFromRawResponse}
           />
         );
 

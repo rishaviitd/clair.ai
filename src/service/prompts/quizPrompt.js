@@ -1,44 +1,54 @@
 /**
- * Prompt for the Quiz Generation Service
+ * Prompt template for generating quizzes from notes
+ * This prompt is used to generate a structured quiz with multiple-choice and subjective questions
  */
 
 // Quiz Generation Prompt
-export const QUIZ_GENERATION_PROMPT = `Generate a quiz with 10 questions (8 multiple choice, 2 subjective) based on the notes.
+export const QUIZ_GENERATION_PROMPT = `Generate a quiz with 10 questions (8 multiple choice, 2 subjective) based on the notes provided.
 
-Return a VALID JSON array of questions. DO NOT include any backslashes before quotes in property names or values.
+The notes might be in Markdown format with proper headings, lists, and math formulas. Please analyze the content carefully to identify key concepts, definitions, formulas, and examples from which to create questions.
 
-CORRECT JSON FORMAT (follow this exactly):
+IMPORTANT FORMATTING INSTRUCTIONS:
+
+1. Return your response as JSON - a plain array of question objects.
+2. DO NOT wrap the JSON in markdown code blocks (no \`\`\`json or \`\`\` tags).
+3. DO NOT include any text before or after the JSON.
+
+Each question object in the array should have:
+- "id": a unique identifier (e.g., "q1", "q2", etc.)
+- "type": either "mcq" or "subjective"
+- "question": the question text
+- For MCQ questions, include:
+  - "options": an array of objects, each with "id" (a, b, c, d) and "text"
+  - "correctAnswer": the id of the correct option
+  - "explanation": why the answer is correct
+- For subjective questions, include:
+  - "sampleAnswer": a model answer
+
+Example of the expected JSON structure (but with your own questions):
+
 [
   {
     "id": "q1",
     "type": "mcq",
-    "question": "What is the average rate of change?",
+    "question": "What is the derivative of x²?",
     "options": [
-      {"id": "a", "text": "The change in y divided by the change in x"},
-      {"id": "b", "text": "The slope of a secant line"},
-      {"id": "c", "text": "The instantaneous rate of change"},
-      {"id": "d", "text": "The area under a curve"}
+      {"id": "a", "text": "x"},
+      {"id": "b", "text": "2x"},
+      {"id": "c", "text": "x²"},
+      {"id": "d", "text": "2"}
     ],
     "correctAnswer": "b",
-    "explanation": "The average rate of change is represented by the slope of the secant line connecting two points on a curve.",
-    "topic": "Differentiation"
+    "explanation": "The derivative of x² is 2x."
   },
   {
     "id": "q2",
     "type": "subjective",
-    "question": "Explain the concept of average rate of change with respect to a curve.",
-    "sampleAnswer": "The average rate of change between two points on a curve is the slope of the secant line connecting those points. It represents the average change in the dependent variable (y) per unit change in the independent variable (x) over that interval.",
-    "topic": "Differentiation"
+    "question": "Explain the concept of limits in calculus.",
+    "sampleAnswer": "A limit describes the value a function approaches as the input approaches a certain value."
   }
 ]
 
-IMPORTANT - DO NOT INCLUDE BACKSLASHES (\) BEFORE QUOTES IN JSON:
-✓ CORRECT: "id": "q1"
-✗ WRONG: "id\": "q1"
-✗ WRONG: \"id": "q1\"
+Now, based on the following notes, create 10 questions:
 
-For MATH FORMULAS in questions/answers, use standard markdown notation:
-* Inline math: $formula$ (example: $x^2 + y^2 = z^2$)
-* Block math: $$formula$$ (example: $$\frac{dy}{dx}$$)
-
-The structured notes data is provided here:`;
+`;

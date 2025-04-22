@@ -2,8 +2,8 @@ import { useState } from "react";
 import {
   generateQuizFromNotes,
   getStoredQuizzes,
+  parseQuestions,
 } from "../service/geminiService";
-import { parseQuizQuestions } from "../service/types/quizSchema";
 import { jsonrepair } from "jsonrepair";
 
 /**
@@ -145,9 +145,9 @@ const useQuiz = () => {
                 );
                 quiz.quizQuestions = emergencyRepaired;
               } else {
-                // Fall back to Zod parseQuizQuestions if emergency repair fails
-                console.log("Emergency repair failed, trying Zod parser");
-                const parsedQuestions = parseQuizQuestions(quiz.quiz);
+                // Fall back to our simple parser if emergency repair fails
+                console.log("Emergency repair failed, trying simple parser");
+                const parsedQuestions = parseQuestions(quiz.quiz);
 
                 if (parsedQuestions && parsedQuestions.length > 0) {
                   console.log(
