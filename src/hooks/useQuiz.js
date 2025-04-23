@@ -4,66 +4,6 @@ import {
   getStoredQuizzes,
   parseQuestions,
 } from "../service/geminiService";
-import { jsonrepair } from "jsonrepair";
-
-/**
- * Emergency repair function for quiz JSON
- * @param {string} jsonString - The potentially malformed JSON string
- * @returns {Array|null} - Array of questions or null
- */
-const emergencyRepairQuizJson = (jsonString) => {
-  if (!jsonString) return null;
-
-  try {
-    // First try standard repair
-    const repaired = jsonrepair(jsonString);
-    return JSON.parse(repaired);
-  } catch (e) {
-    console.log(
-      "Standard repair failed, attempting emergency fixes:",
-      e.message
-    );
-
-    // Extract quiz content from markdown blocks if present
-    let cleaned = jsonString;
-    const codeBlockMatch = jsonString.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (codeBlockMatch) {
-      cleaned = codeBlockMatch[1].trim();
-    }
-
-    // Extract JSON array
-    if (cleaned.includes("[") && cleaned.includes("]")) {
-      const startIdx = cleaned.indexOf("[");
-      const endIdx = cleaned.lastIndexOf("]") + 1;
-      if (startIdx >= 0 && endIdx > startIdx) {
-        cleaned = cleaned.substring(startIdx, endIdx);
-      }
-    }
-
-    // Fix the specific escaping issues that break parsing
-    cleaned = cleaned
-      // Fix property with escaped quotes: "id\":
-      .replace(/"([a-zA-Z0-9_]+)\\"/g, '"$1"')
-      // Fix values with escaped quotes: \"value"
-      .replace(/\\+"([^"]+)"/g, '"$1"')
-      // General cleanup of escaped quotes
-      .replace(/\\+"/g, '"')
-      // Fix object/array brackets
-      .replace(/\\+\{/g, "{")
-      .replace(/\\+\}/g, "}")
-      .replace(/\\+\[/g, "[")
-      .replace(/\\+\]/g, "]");
-
-    try {
-      // Try to parse after our fixes
-      return JSON.parse(cleaned);
-    } catch (error) {
-      // If all else fails, return null
-      console.error("Emergency repair failed:", error.message);
-      return null;
-    }
-  }
-};
 
 /**
  * Custom hook for managing quiz state and interactions
@@ -131,34 +71,18 @@ const useQuiz = () => {
 
           if (quiz.quiz) {
             try {
-              // First try our emergency repair function
-              console.log("Attempting emergency JSON repair");
-              const emergencyRepaired = emergencyRepairQuizJson(quiz.quiz);
+              console.log("Attempting to parse questions from quiz text");
+              const parsedQuestions = parseQuestions(quiz.quiz);
 
-              if (
-                emergencyRepaired &&
-                Array.isArray(emergencyRepaired) &&
-                emergencyRepaired.length > 0
-              ) {
+              if (parsedQuestions && parsedQuestions.length > 0) {
                 console.log(
-                  `Emergency repair successful, extracted ${emergencyRepaired.length} questions`
+                  `Successfully parsed ${parsedQuestions.length} questions from quiz text`
                 );
-                quiz.quizQuestions = emergencyRepaired;
+                quiz.quizQuestions = parsedQuestions;
               } else {
-                // Fall back to our simple parser if emergency repair fails
-                console.log("Emergency repair failed, trying simple parser");
-                const parsedQuestions = parseQuestions(quiz.quiz);
-
-                if (parsedQuestions && parsedQuestions.length > 0) {
-                  console.log(
-                    `Successfully parsed ${parsedQuestions.length} questions from quiz text`
-                  );
-                  quiz.quizQuestions = parsedQuestions;
-                } else {
-                  console.warn(
-                    "Could not parse structured questions from quiz text"
-                  );
-                }
+                console.warn(
+                  "Could not parse structured questions from quiz text"
+                );
               }
             } catch (parseError) {
               console.warn("Error parsing quiz questions:", parseError.message);

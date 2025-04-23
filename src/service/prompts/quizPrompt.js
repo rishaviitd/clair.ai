@@ -13,39 +13,41 @@ IMPORTANT FORMATTING INSTRUCTIONS:
 1. Return your response as JSON - a plain array of question objects.
 2. DO NOT wrap the JSON in markdown code blocks (no \`\`\`json or \`\`\` tags).
 3. DO NOT include any text before or after the JSON.
+4. Use proper markdown formatting in questions, options, and explanations.
+5. For math expressions, use LaTeX notation between single dollar signs for inline math: $x^2$ or double dollar signs for block math: $$\\frac{dy}{dx}$$
 
 Each question object in the array should have:
 - "id": a unique identifier (e.g., "q1", "q2", etc.)
 - "type": either "mcq" or "subjective"
-- "question": the question text
+- "question": the question text (can include markdown and LaTeX math)
 - For MCQ questions, include:
-  - "options": an array of objects, each with "id" (a, b, c, d) and "text"
+  - "options": an array of objects, each with "id" (a, b, c, d) and "text" (can include markdown and LaTeX math)
   - "correctAnswer": the id of the correct option
-  - "explanation": why the answer is correct
+  - "explanation": why the answer is correct (can include markdown and LaTeX math)
 - For subjective questions, include:
-  - "sampleAnswer": a model answer
+  - "sampleAnswer": a model answer (can include markdown and LaTeX math)
 
-Example of the expected JSON structure (but with your own questions):
+Here are some of the example of the expected JSON structure with proper markdown and LaTeX formatting:
 
 [
   {
-    "id": "q1",
-    "type": "mcq",
-    "question": "What is the derivative of x²?",
-    "options": [
-      {"id": "a", "text": "x"},
-      {"id": "b", "text": "2x"},
-      {"id": "c", "text": "x²"},
-      {"id": "d", "text": "2"}
-    ],
-    "correctAnswer": "b",
-    "explanation": "The derivative of x² is 2x."
-  },
+      "id": "q1",
+      "type": "mcq",
+      "question": "What is the radian equivalent of $60^\\circ$?",
+      "options": [
+        {"id": "a", "text": "$\\frac{\\pi}{6}$"},
+        {"id": "b", "text": "$\\frac{\\pi}{4}$"},
+        {"id": "c", "text": "$\\frac{\\pi}{3}$"},
+        {"id": "d", "text": "$\\frac{\\pi}{2}$"}
+      ],
+      "correctAnswer": "c",
+      "explanation": "To convert degrees to radians, we multiply by $\\frac{\\pi}{180}$. So, $60^\\circ \\times \\frac{\\pi}{180} = \\frac{\\pi}{3}$."
+    },
   {
     "id": "q2",
     "type": "subjective",
-    "question": "Explain the concept of limits in calculus.",
-    "sampleAnswer": "A limit describes the value a function approaches as the input approaches a certain value."
+    "question": "Explain the concept of limits in calculus and write the formal definition of the limit $\\lim_{x \\to a} f(x) = L$.",
+    "sampleAnswer": "A limit describes the value a function approaches as the input approaches a certain value. Formally, we say $\\lim_{x \\to a} f(x) = L$ if for every $\\epsilon > 0$, there exists a $\\delta > 0$ such that if $0 < |x - a| < \\delta$, then $|f(x) - L| < \\epsilon$. This means that we can make $f(x)$ arbitrarily close to $L$ by making $x$ sufficiently close to $a$."
   }
 ]
 

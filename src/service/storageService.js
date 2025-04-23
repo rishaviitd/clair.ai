@@ -1,6 +1,7 @@
 /**
  * Service to handle local storage operations for analysis results and quizzes
  */
+import { convertBackslashesInObject } from "../utils/questionParser";
 
 // Function to store analysis results in localStorage
 export const storeAnalysisResult = (result) => {
@@ -31,6 +32,49 @@ export const storeAnalysisResult = (result) => {
   }
 };
 
+/**
+ * Process quiz data to preserve LaTeX backslashes before storage
+ * @param {Object} quiz - The quiz object to process
+ * @returns {Object} - Processed quiz with proper backslash handling
+ */
+const processQuizForStorage = (quiz) => {
+  if (!quiz.quizQuestions || !Array.isArray(quiz.quizQuestions)) {
+    return quiz;
+  }
+
+  // Deep clone the quiz to avoid modifying the original
+  const processedQuiz = JSON.parse(JSON.stringify(quiz));
+
+  // Process each question to properly escape LaTeX backslashes
+  processedQuiz.quizQuestions = processedQuiz.quizQuestions.map((question) => {
+    // Double the backslashes in LaTeX expressions to survive JSON.stringify
+    if (question.question) {
+      question.question = question.question.replace(/\\/g, "\\\\");
+    }
+
+    if (question.explanation) {
+      question.explanation = question.explanation.replace(/\\/g, "\\\\");
+    }
+
+    if (question.options && Array.isArray(question.options)) {
+      question.options = question.options.map((option) => {
+        if (option.text) {
+          option.text = option.text.replace(/\\/g, "\\\\");
+        }
+        return option;
+      });
+    }
+
+    if (question.sampleAnswer) {
+      question.sampleAnswer = question.sampleAnswer.replace(/\\/g, "\\\\");
+    }
+
+    return question;
+  });
+
+  return processedQuiz;
+};
+
 // Function to store quiz in localStorage
 export const storeQuizResult = (quiz) => {
   try {
@@ -48,8 +92,11 @@ export const storeQuizResult = (quiz) => {
           id: `quiz_${Date.now()}`,
         };
 
+    // Process the quiz to handle LaTeX backslashes properly
+    const processedQuiz = processQuizForStorage(quizWithTimestamp);
+
     // Store updated quizzes
-    const updatedQuizzes = [...existingQuizzes, quizWithTimestamp];
+    const updatedQuizzes = [...existingQuizzes, processedQuiz];
     localStorage.setItem("notesQuizResults", JSON.stringify(updatedQuizzes));
 
     return quizWithTimestamp;
@@ -69,10 +116,59 @@ export const getStoredAnalysisResults = () => {
   }
 };
 
+/**
+ * Process quiz data retrieved from storage to restore proper LaTeX backslashes
+ * @param {Array} quizzes - Array of quizzes from localStorage
+ * @returns {Array} - Processed quizzes with proper backslash handling
+ */
+const processQuizzesFromStorage = (quizzes) => {
+  if (!Array.isArray(quizzes)) {
+    return quizzes;
+  }
+
+  return quizzes.map((quiz) => {
+    if (!quiz.quizQuestions || !Array.isArray(quiz.quizQuestions)) {
+      return quiz;
+    }
+
+    // Process each question to restore LaTeX backslashes
+    quiz.quizQuestions = quiz.quizQuestions.map((question) => {
+      // Convert double backslashes back to single for proper LaTeX rendering
+      if (question.question) {
+        question.question = question.question.replace(/\\\\/g, "\\");
+      }
+
+      if (question.explanation) {
+        question.explanation = question.explanation.replace(/\\\\/g, "\\");
+      }
+
+      if (question.options && Array.isArray(question.options)) {
+        question.options = question.options.map((option) => {
+          if (option.text) {
+            option.text = option.text.replace(/\\\\/g, "\\");
+          }
+          return option;
+        });
+      }
+
+      if (question.sampleAnswer) {
+        question.sampleAnswer = question.sampleAnswer.replace(/\\\\/g, "\\");
+      }
+
+      return question;
+    });
+
+    return quiz;
+  });
+};
+
 // Function to get all stored quizzes
 export const getStoredQuizzes = () => {
   try {
-    return JSON.parse(localStorage.getItem("notesQuizResults") || "[]");
+    const quizzes = JSON.parse(
+      localStorage.getItem("notesQuizResults") || "[]"
+    );
+    return processQuizzesFromStorage(quizzes);
   } catch (error) {
     console.error("Error retrieving quizzes from localStorage:", error);
     return [];
@@ -98,7 +194,14 @@ export const getStoredQuizById = (id) => {
     const quizzes = JSON.parse(
       localStorage.getItem("notesQuizResults") || "[]"
     );
-    return quizzes.find((quiz) => quiz.id === id);
+    const quiz = quizzes.find((quiz) => quiz.id === id);
+
+    if (quiz) {
+      // Process quiz to restore proper LaTeX backslashes
+      return processQuizzesFromStorage([quiz])[0];
+    }
+
+    return null;
   } catch (error) {
     console.error("Error retrieving quiz from localStorage:", error);
     return null;

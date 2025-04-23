@@ -112,7 +112,9 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
 
       // Use our simple parser to parse the quiz questions
       console.log("Attempting to parse quiz questions...");
+      console.log(rawQuizText);
       const structuredQuestions = parseQuestions(rawQuizText);
+      console.log(structuredQuestions);
       console.log(`Parsed ${structuredQuestions.length} structured questions`);
 
       // Create result object
