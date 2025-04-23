@@ -109,7 +109,7 @@ const NotesView = () => {
             to="/"
             className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
-            <FiArrowLeft className="mr-2" /> Back to Home
+            <FiArrowLeft className="mr-2" /> Back
           </Link>
         </div>
       </div>
@@ -123,7 +123,7 @@ const NotesView = () => {
           onClick={handleBackToDashboard}
           className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
         >
-          <FiArrowLeft className="mr-1" /> Back to Dashboard
+          <FiArrowLeft className="mr-1" /> Back
         </button>
         <h2 className="text-xl font-bold ml-4 text-gray-800">
           {noteData.fileName || "Analysis Results"}

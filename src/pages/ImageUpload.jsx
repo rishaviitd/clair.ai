@@ -248,7 +248,7 @@ const ImageUpload = ({ initialView = "upload" }) => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-6 pb-24 md:pb-6">
+    <div className="max-w-5xl mx-auto p-4 md:p-6 pb-24 md:pb-6">
       <Navigation
         view={view}
         setView={setView}
@@ -256,7 +256,9 @@ const ImageUpload = ({ initialView = "upload" }) => {
         savedQuizzesCount={0}
       />
 
-      {renderCurrentView()}
+      <div className="bg-gray-50 p-4 md:p-6 rounded-lg shadow-sm">
+        {renderCurrentView()}
+      </div>
     </div>
   );
 };

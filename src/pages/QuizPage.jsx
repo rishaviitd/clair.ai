@@ -72,7 +72,7 @@ const QuizPage = () => {
           onClick={() => navigate("/")}
           className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
         >
-          <FiArrowLeft className="mr-2" /> Back to Upload
+          <FiArrowLeft className="mr-2" /> Back
         </button>
         <h1 className="text-2xl font-semibold text-gray-800 ml-4">Quiz</h1>
       </div>

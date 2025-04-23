@@ -31,7 +31,7 @@ const StructuredNotes = ({
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6 pb-4 border-b">
-        <h4 className="text-lg font-semibold text-gray-800">Notes Analysis</h4>
+        <h4 className="text-lg font-semibold text-gray-800">Notes</h4>
         <div className="flex gap-2">
           <button
             onClick={() => onGenerateQuiz(result)}
