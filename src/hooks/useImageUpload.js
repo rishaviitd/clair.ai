@@ -222,6 +222,14 @@ const useImageUpload = () => {
     }
   };
 
+  /**
+   * Sets images directly (useful when restoring state)
+   * @param {Array} newImages - The images to set
+   */
+  const setImagesDirectly = (newImages) => {
+    setImages(newImages);
+  };
+
   return {
     images,
     uploading,
@@ -235,6 +243,7 @@ const useImageUpload = () => {
     resetImageUpload,
     setResultsDirectly,
     setError,
+    setImagesDirectly,
   };
 };
 

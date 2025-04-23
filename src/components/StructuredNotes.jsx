@@ -12,9 +12,13 @@ import "katex/dist/katex.min.css";
  * @param {Object} props
  * @param {Object} props.result - The analysis result containing markdown content
  * @param {Function} props.onGenerateQuiz - Function to call when Generate Quiz button is clicked
+ * @param {boolean} props.generatingQuiz - Whether a quiz is being generated
  */
-const StructuredNotes = ({ result, onGenerateQuiz }) => {
-  console.log(result);
+const StructuredNotes = ({
+  result,
+  onGenerateQuiz,
+  generatingQuiz = false,
+}) => {
   // Check if we have valid content
   if (!result || (!result.markdown && !result.description)) {
     return (
@@ -25,22 +29,30 @@ const StructuredNotes = ({ result, onGenerateQuiz }) => {
   }
 
   return (
-    <div className="bg-gray-50 p-4 rounded-md border border-gray-200">
-      <div className="flex justify-between items-center mb-4">
-        <h4 className="text-lg font-semibold text-gray-800">
-          Raw Gemini Response
-        </h4>
+    <div className="bg-white p-6 rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-6 pb-4 border-b">
+        <h4 className="text-lg font-semibold text-gray-800">Notes Analysis</h4>
         <div className="flex gap-2">
           <button
             onClick={() => onGenerateQuiz(result)}
-            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition-colors flex items-center"
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center"
+            disabled={generatingQuiz}
           >
-            <FiEdit className="mr-1" /> Generate Quiz
+            {generatingQuiz ? (
+              <>
+                <span className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                Generating Quiz...
+              </>
+            ) : (
+              <>
+                <FiEdit className="mr-2" /> Generate Quiz
+              </>
+            )}
           </button>
         </div>
       </div>
 
-      <div className="bg-white p-4 rounded shadow-sm prose max-w-none">
+      <div className="prose max-w-none">
         <ReactMarkdown
           children={result.markdown}
           remarkPlugins={[remarkMath]}

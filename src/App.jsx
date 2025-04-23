@@ -1,8 +1,9 @@
 import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import ImageUpload from "./pages/ImageUpload";
 import NotFound from "./pages/NotFound";
-import RawResponseView from "./pages/RawResponseView";
-import MarkdownViewer from "./components/MarkdownViewer";
+import NotesView from "./pages/NotesView";
+import QuizPage from "./pages/QuizPage";
 
 // const markdownContent = `
 // # Trigonometry
@@ -109,29 +110,18 @@ import MarkdownViewer from "./components/MarkdownViewer";
 //   * Instantaneous Rate of Change of y with respect to x
 // `;
 function App() {
-  // Simple router to handle paths
-  const path = window.location.pathname;
-
-  // Render the appropriate component based on the path
-  const getComponent = () => {
-    switch (path) {
-      case "/":
-      case "":
-        return <ImageUpload />;
-      case "/raw-response":
-        // This component will be managed in ImageUpload
-        return <ImageUpload initialView="raw-response" />;
-      default:
-        return <NotFound />;
-    }
-  };
-
-  return <div className="min-h-screen bg-gray-100">{getComponent()}</div>;
-  // return (
-  //   <div className="p-6">
-  //     <MarkdownViewer content={markdownContent} />
-  //   </div>
-  // );
+  return (
+    <Router>
+      <div className="min-h-screen bg-gray-100">
+        <Routes>
+          <Route path="/" element={<ImageUpload />} />
+          <Route path="/quiz" element={<QuizPage />} />
+          <Route path="/notes/:noteId" element={<NotesView />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </div>
+    </Router>
+  );
 }
 
 export default App;

@@ -84,12 +84,12 @@ const QuizView = ({
           <div className="text-sm font-medium text-gray-600">
             Question {currentQuestionIndex + 1} of {questions.length}
           </div>
-          <button
+          {/* <button
             onClick={() => setDebugMode(!debugMode)}
             className="px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
           >
             {debugMode ? "Hide Raw Data" : "Show Raw Data"}
-          </button>
+          </button> */}
         </div>
       </div>
 

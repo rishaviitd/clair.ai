@@ -18,6 +18,7 @@ import {
   generateQuizFromNotes,
   getStoredQuizzes,
   parseQuestions,
+  storeAnalysisResult,
 } from "../service/geminiService";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -25,6 +26,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 import { InlineMath, BlockMath } from "react-katex";
 import StructuredNotes from "../components/StructuredNotes";
+import { useLocation, useNavigate } from "react-router-dom";
 
 // Import components
 import Navigation from "../components/Navigation";
@@ -39,26 +41,38 @@ import RawResponseView from "../pages/RawResponseView";
 import useImageUpload from "../hooks/useImageUpload";
 import useQuiz from "../hooks/useQuiz";
 
-// Component for displaying the extracted content from the first step
-const ExtractedContent = ({ content }) => {
-  if (!content) return null;
+const TEMP_STATE_KEY = "temp_upload_state";
 
-  return (
-    <div className="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-      <h3 className="font-semibold text-lg mb-2 text-gray-800">
-        Extracted Content
-      </h3>
-      <div className="bg-white p-4 rounded shadow-sm overflow-auto max-h-96">
-        <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
-      </div>
-    </div>
-  );
-};
+// Component for displaying the extracted content from the first step
+// const ExtractedContent = ({ content }) => {
+//   if (!content) return null;
+
+//   return (
+//     <div className="mt-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+//       <h3 className="font-semibold text-lg mb-2 text-gray-800">
+//         Extracted Content
+//       </h3>
+//       <div className="bg-white p-4 rounded shadow-sm overflow-auto max-h-96">
+//         <pre className="whitespace-pre-wrap font-mono text-sm">{content}</pre>
+//       </div>
+//     </div>
+//   );
+// };
 
 const ImageUpload = ({ initialView = "upload" }) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const [view, setView] = useState(initialView);
   const [savedResults, setSavedResults] = useState([]);
+  const [savedQuizzes, setSavedQuizzes] = useState([]);
   const [rawResponse, setRawResponse] = useState(null);
+
+  // Add effect to reset upload section when view changes
+  useEffect(() => {
+    if (view !== "upload") {
+      resetImageUpload();
+    }
+  }, [view]);
 
   // Use the custom hooks
   const {
@@ -73,82 +87,112 @@ const ImageUpload = ({ initialView = "upload" }) => {
     resetImageUpload,
     setResultsDirectly,
     setError,
+    setImagesDirectly,
   } = useImageUpload();
 
-  const {
-    quizResult,
-    selectedResult,
-    generatingQuiz,
-    currentQuestionIndex,
-    userAnswers,
-    showAnswer,
-    quizCompleted,
-    initializeWithSavedQuizzes,
-    handleGenerateQuiz,
-    handleNextQuestion,
-    handlePreviousQuestion,
-    handleAnswerSelect,
-    toggleShowAnswer,
-    resetQuiz,
-    loadQuiz,
-    getQuizScore,
-  } = useQuiz();
+  const { quizResult, selectedResult, generatingQuiz, handleGenerateQuiz } =
+    useQuiz();
+
+  // Save state before navigating away
+  const saveStateBeforeNavigation = () => {
+    const stateToSave = {
+      images: images,
+      results: results,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(TEMP_STATE_KEY, JSON.stringify(stateToSave));
+  };
+
+  // Restore state when returning
+  const restoreState = () => {
+    try {
+      const savedState = localStorage.getItem(TEMP_STATE_KEY);
+      if (savedState) {
+        const {
+          images: savedImages,
+          results: savedResults,
+          timestamp,
+        } = JSON.parse(savedState);
+
+        // Only restore if the state is less than 5 minutes old
+        if (Date.now() - timestamp < 5 * 60 * 1000) {
+          setImagesDirectly(savedImages);
+          setResultsDirectly(savedResults);
+        }
+
+        // Clear the saved state
+        localStorage.removeItem(TEMP_STATE_KEY);
+      }
+    } catch (error) {
+      console.error("Error restoring state:", error);
+    }
+  };
 
   // Load saved results and quizzes on component mount
   useEffect(() => {
-    const loadSavedData = () => {
+    const loadSavedData = async () => {
       const storedResults = getStoredAnalysisResults();
-      setSavedResults(storedResults);
+      const storedQuizzes = getStoredQuizzes();
 
-      // Initialize quizzes from storage
-      initializeWithSavedQuizzes();
+      setSavedResults(storedResults);
+      setSavedQuizzes(storedQuizzes);
+
+      // Check for quizId in URL parameters
+      const params = new URLSearchParams(location.search);
+      const quizId = params.get("quizId");
+
+      if (quizId) {
+        // Get the quiz from storage and load it
+        const quiz = storedQuizzes.find((q) => q.id === quizId);
+
+        if (quiz) {
+          // Navigate to quiz page with the quiz ID
+          navigate(`/quiz?id=${quizId}`);
+        }
+      }
+
+      // Restore state if returning from notes view
+      if (location.state?.returnFromNotes) {
+        restoreState();
+      }
     };
 
     loadSavedData();
-  }, []);
+  }, [location]);
 
   // Handler for batch processing with two-step Gemini and updating saved results
   const processBatchWithGeminiAndUpdateSaved = async () => {
     const result = await processBatchWithGemini();
     if (result && result.success) {
-      // Update saved results with the new batch result
+      // The result is already stored by processBatchWithGemini internally
+      // Just update the local state with the result
       setSavedResults((prev) => [result, ...prev]);
+      setResultsDirectly([result]);
     }
   };
 
-  // Handler for generating a quiz and switching to quiz view
+  // Handler for generating a quiz and navigating to quiz page
   const handleGenerateQuizAndView = async (result) => {
     const quiz = await handleGenerateQuiz(result);
-    if (quiz) {
-      // Store the raw response text
-      setRawResponse(quiz.rawText || "No raw response available");
-      setView("quiz");
+    if (quiz && quiz.success) {
+      // Store the quiz ID in localStorage to persist between page navigation
+      localStorage.setItem("currentQuizId", quiz.id);
+      // Navigate to the quiz page
+      navigate("/quiz");
     }
-  };
-
-  // Handler for viewing a saved result
-  const handleViewSavedResult = (result) => {
-    setResultsDirectly([result]);
-    setView("upload");
   };
 
   // Handler for loading a saved quiz
   const handleLoadQuiz = (quiz) => {
-    loadQuiz(quiz);
-    setView("quiz");
+    // Store the quiz ID in localStorage
+    localStorage.setItem("currentQuizId", quiz.id);
+    navigate("/quiz");
   };
 
-  // Handler for viewing raw response
-  const handleViewRawResponse = () => {
-    if (quizResult) {
-      setRawResponse(quizResult);
-      setView("raw-response");
-    }
-  };
-
-  // Handler for going back from raw response view
-  const handleBackFromRawResponse = () => {
-    setView("quiz");
+  // Handler for viewing notes - save state before navigating
+  const handleViewNotes = (noteId) => {
+    saveStateBeforeNavigation();
+    navigate(`/notes/${noteId}`, { state: { fromUpload: true } });
   };
 
   // Render the current view
@@ -166,9 +210,9 @@ const ImageUpload = ({ initialView = "upload" }) => {
               processBatchWithGemini={processBatchWithGeminiAndUpdateSaved}
             />
 
-            {extractedContent && (
+            {/* {extractedContent && (
               <ExtractedContent content={extractedContent} />
-            )}
+            )} */}
 
             {results.length > 0 && (
               <div className="mt-6">
@@ -178,6 +222,8 @@ const ImageUpload = ({ initialView = "upload" }) => {
                 <ResultsTabView
                   results={results}
                   onGenerateQuiz={handleGenerateQuizAndView}
+                  generatingQuiz={generatingQuiz}
+                  onViewNotes={handleViewNotes}
                 />
               </div>
             )}
@@ -188,53 +234,11 @@ const ImageUpload = ({ initialView = "upload" }) => {
         return (
           <SavedResults
             savedResults={savedResults}
-            onViewResult={handleViewSavedResult}
+            savedQuizzes={savedQuizzes}
             onGenerateQuiz={handleGenerateQuizAndView}
             generatingQuiz={generatingQuiz}
             selectedResult={selectedResult}
-          />
-        );
-
-      case "quizzes":
-        return (
-          <SavedQuizzes
-            savedQuizzes={getStoredQuizzes()}
             onLoadQuiz={handleLoadQuiz}
-          />
-        );
-
-      case "quiz":
-        return (
-          <>
-            <QuizView
-              quizResult={quizResult}
-              currentQuestionIndex={currentQuestionIndex}
-              userAnswers={userAnswers}
-              showAnswer={showAnswer}
-              quizCompleted={quizCompleted}
-              handleNextQuestion={handleNextQuestion}
-              handlePreviousQuestion={handlePreviousQuestion}
-              handleAnswerSelect={handleAnswerSelect}
-              toggleShowAnswer={toggleShowAnswer}
-              resetQuiz={resetQuiz}
-              getQuizScore={getQuizScore}
-            />
-            <div className="mt-4 flex justify-center">
-              <button
-                onClick={handleViewRawResponse}
-                className="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200"
-              >
-                <FiCode className="mr-2" /> View Raw Response
-              </button>
-            </div>
-          </>
-        );
-
-      case "raw-response":
-        return (
-          <RawResponseView
-            rawResponse={rawResponse}
-            onBack={handleBackFromRawResponse}
           />
         );
 
@@ -249,8 +253,7 @@ const ImageUpload = ({ initialView = "upload" }) => {
         view={view}
         setView={setView}
         savedResultsCount={savedResults.length}
-        savedQuizzesCount={getStoredQuizzes().length}
-        quizResult={quizResult}
+        savedQuizzesCount={0}
       />
 
       {renderCurrentView()}
