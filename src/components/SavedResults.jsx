@@ -62,17 +62,24 @@ const SavedResults = ({
     }));
   };
 
-  // Format the file name to extract the date
-  const formatFileName = (fileName) => {
-    if (!fileName) return "Notes";
+  // Get current date in DD-MM-YYYY format with day of week
+  const getCurrentDateFormatted = () => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, "0");
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const year = today.getFullYear();
+    const weekdays = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const dayOfWeek = weekdays[today.getDay()];
 
-    // Try to extract date from filenames like "WhatsApp Image 2025-03-28 at 18.51.07 (1).jpeg"
-    const dateMatch = fileName.match(/(\d{4}-\d{2}-\d{2})/);
-    if (dateMatch && dateMatch[1]) {
-      return dateMatch[1];
-    }
-
-    return fileName;
+    return `${day}-${month}-${year} [${dayOfWeek}]`;
   };
 
   return (
@@ -115,7 +122,7 @@ const SavedResults = ({
                     </div>
                     <div>
                       <h4 className="font-medium text-md md:text-lg truncate max-w-[200px] md:max-w-[300px]">
-                        {formatFileName(result.fileName)}
+                        {getCurrentDateFormatted()}
                       </h4>
                       {/* <p className="text-xs text-gray-500">
                         {new Date(result.timestamp).toLocaleString()}
