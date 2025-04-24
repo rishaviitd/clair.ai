@@ -83,13 +83,29 @@ export const storeQuizResult = (quiz) => {
       localStorage.getItem("notesQuizResults") || "[]"
     );
 
-    // Add new quiz with timestamp if it doesn't already have an id
+    // Determine the quiz number (1, 2, 3, etc.) by counting existing quizzes
+    let quizNumber = 1; // Default to 1 if no quizzes exist
+
+    if (existingQuizzes.length > 0) {
+      // Find the highest quiz number and add 1
+      const highestQuizNumber = existingQuizzes.reduce((highest, q) => {
+        if (q.quizNumber && q.quizNumber > highest) {
+          return q.quizNumber;
+        }
+        return highest;
+      }, 0);
+
+      quizNumber = highestQuizNumber + 1;
+    }
+
+    // Add new quiz with timestamp and quiz number if it doesn't already have an id
     const quizWithTimestamp = quiz.id
       ? quiz
       : {
           ...quiz,
           timestamp: new Date().toISOString(),
           id: `quiz_${Date.now()}`,
+          quizNumber: quizNumber,
         };
 
     // Process the quiz to handle LaTeX backslashes properly

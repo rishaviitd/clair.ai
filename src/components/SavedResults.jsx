@@ -54,6 +54,22 @@ const SavedResults = ({
     return acc;
   }, {});
 
+  // Debug saved quizzes
+  useEffect(() => {
+    console.log("SavedResults - All saved quizzes:", savedQuizzes);
+    console.log("SavedResults - Quizzes by source ID:", quizzesBySourceId);
+
+    // Check if any quizzes have been attempted
+    const attemptedQuizzes = savedQuizzes.filter((quiz) => quiz.attempted);
+    console.log("SavedResults - Attempted quizzes:", attemptedQuizzes);
+
+    // Check localStorage directly with the correct key
+    const localStorageQuizzes = JSON.parse(
+      localStorage.getItem("notesQuizResults") || "[]"
+    );
+    console.log("SavedResults - Quizzes in localStorage:", localStorageQuizzes);
+  }, [savedQuizzes, quizzesBySourceId]);
+
   // Toggle collapsed state for a specific result
   const toggleResultCollapse = (resultId) => {
     setCollapsedResults((prev) => ({
@@ -121,18 +137,12 @@ const SavedResults = ({
                       )}
                     </div>
                     <div>
-                      <h4 className="font-medium text-md md:text-lg truncate max-w-[200px] md:max-w-[300px]">
+                      <h4 className="font-medium text-gray-800">
                         {getCurrentDateFormatted()}
                       </h4>
-                      {/* <p className="text-xs text-gray-500">
-                        {new Date(result.timestamp).toLocaleString()}
-                      </p> */}
                     </div>
                   </div>
-                  <div
-                    className="flex space-x-2"
-                    onClick={(e) => e.stopPropagation()}
-                  >
+                  <div className="flex items-center space-x-2">
                     <Link
                       to={`/notes/${result.id}`}
                       className="p-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center"
@@ -146,7 +156,12 @@ const SavedResults = ({
                         onGenerateQuiz(result);
                       }}
                       className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
-                      disabled={generatingQuiz}
+                      disabled={
+                        generatingQuiz ||
+                        quizzesBySourceId[result.id]?.some(
+                          (quiz) => quiz.attempted
+                        )
+                      }
                       aria-label="Generate Quiz"
                     >
                       {generatingQuiz && result.id === selectedResult?.id ? (
@@ -163,27 +178,47 @@ const SavedResults = ({
               {!collapsedResults[result.id] &&
                 quizzesBySourceId[result.id] &&
                 quizzesBySourceId[result.id].length > 0 && (
-                  <div className="bg-gray-50 p-3">
+                  <div className="bg-gray-50 p-3 mt-3">
                     <div className="space-y-2">
-                      {quizzesBySourceId[result.id].map((quiz, index) => (
+                      {quizzesBySourceId[result.id].map((quiz, quizIndex) => (
                         <div
                           key={quiz.id}
                           className="bg-white p-3 rounded-md border border-gray-200 flex flex-col sm:flex-row justify-between sm:items-center"
                         >
                           <div className="mb-2 sm:mb-0">
-                            <p className="text-sm font-medium">
-                              Quiz-{index + 1}
-                            </p>
-                            {/* <p className="text-xs text-gray-500">
-                              {new Date(quiz.timestamp).toLocaleString()}
-                            </p> */}
+                            <div className="text-sm font-medium">
+                              {quiz.attempted
+                                ? `Quiz ${
+                                    quiz.quizNumber || quizIndex + 1
+                                  } Results`
+                                : `Quiz ${quiz.quizNumber || quizIndex + 1}`}
+                            </div>
+                            {quiz.attempted && (
+                              <div className="text-sm text-gray-600">
+                                <span className="font-medium">
+                                  {quiz.score.obtained}/{quiz.score.total}
+                                </span>
+                                <span className="text-gray-500 ml-1">
+                                  ({quiz.score.percentage}%)
+                                </span>
+                              </div>
+                            )}
                           </div>
-                          <button
-                            onClick={() => onLoadQuiz(quiz)}
-                            className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
-                          >
-                            Start
-                          </button>
+                          {quiz.attempted ? (
+                            <button
+                              onClick={() => onLoadQuiz(quiz)}
+                              className="px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors flex items-center justify-center"
+                            >
+                              Review
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => onLoadQuiz(quiz)}
+                              className="px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
+                            >
+                              Start
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>

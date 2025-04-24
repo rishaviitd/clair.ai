@@ -113,19 +113,131 @@ const QuizView = ({
           <div className="mb-5 text-center">
             <p className="text-green-700 mb-2">Your Score:</p>
             <div className="text-2xl md:text-3xl font-bold">
-              {quizScore.correct} / {quizScore.total} correct
+              {quizScore.obtained} / {quizScore.total} correct
               <span className="ml-2 text-lg md:text-xl">
                 ({quizScore.percentage}%)
               </span>
             </div>
           </div>
 
-          <div className="flex justify-center">
+          {/* Detailed Question Summary */}
+          <div className="mt-8 space-y-6">
+            <h5 className="text-lg font-medium text-gray-800 mb-4">
+              Question Summary
+            </h5>
+            {questions.map((question, index) => {
+              const userAnswer = userAnswers[question.id];
+              const isCorrect =
+                question.type === "mcq" &&
+                userAnswer === question.correctAnswer;
+
+              return (
+                <div
+                  key={question.id}
+                  className="bg-white rounded-lg border p-4"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <span className="text-sm font-medium text-gray-500">
+                      Question {index + 1}
+                    </span>
+                    {question.type === "mcq" && (
+                      <span
+                        className={`px-2 py-1 rounded text-sm ${
+                          isCorrect
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {isCorrect ? "Correct" : "Incorrect"}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mb-4">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex, rehypeRaw]}
+                    >
+                      {question.question}
+                    </ReactMarkdown>
+                  </div>
+
+                  <div className="space-y-2">
+                    {question.options.map((option) => (
+                      <div
+                        key={option.id || Math.random()}
+                        onClick={() =>
+                          !quizCompleted &&
+                          handleAnswerSelect(currentQuestion.id, option.id)
+                        }
+                        className={`p-3 border rounded-md cursor-pointer flex items-center ${
+                          userAnswer === option.id
+                            ? quizCompleted
+                              ? userAnswer === question.correctAnswer
+                                ? "bg-green-50 border-green-300"
+                                : "bg-red-50 border-red-300"
+                              : "bg-indigo-50 border-indigo-300"
+                            : quizCompleted &&
+                              option.id === question.correctAnswer
+                            ? "bg-green-50 border-green-300"
+                            : "hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="mr-3 font-medium">
+                          {option.id?.toUpperCase() || "?"}
+                        </div>
+                        <div className="flex-1">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[rehypeKatex, rehypeRaw]}
+                          >
+                            {option.text}
+                          </ReactMarkdown>
+                        </div>
+                        {userAnswer === option.id && !quizCompleted && (
+                          <FiCheckSquare className="text-indigo-500" />
+                        )}
+                        {quizCompleted &&
+                          (userAnswer === option.id ||
+                            option.id === question.correctAnswer) && (
+                            <FiCheckSquare
+                              className={
+                                option.id === question.correctAnswer
+                                  ? "text-green-500"
+                                  : "text-red-500"
+                              }
+                            />
+                          )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {quizCompleted && (
+                    <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                      <h5 className="font-medium text-blue-800 mb-2">
+                        Explanation
+                      </h5>
+                      <div className="text-blue-700">
+                        <ReactMarkdown
+                          remarkPlugins={[remarkMath]}
+                          rehypePlugins={[rehypeKatex, rehypeRaw]}
+                        >
+                          {question.explanation || "No explanation provided."}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="flex justify-center mt-8">
             <button
-              onClick={() => resetQuiz()}
+              onClick={() => window.history.back()}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center"
             >
-              <FiBookOpen className="mr-2" /> Review Questions
+              <FiArrowLeft className="mr-2" /> Back
             </button>
           </div>
         </div>
@@ -144,94 +256,66 @@ const QuizView = ({
             </h4>
 
             {/* MCQ Options */}
-            {currentQuestion.type === "mcq" &&
-              currentQuestion.options &&
-              Array.isArray(currentQuestion.options) && (
-                <div className="space-y-2 md:space-y-3 mt-3">
-                  {currentQuestion.options.length === 0 ? (
-                    <div className="p-3 border border-yellow-300 bg-yellow-50 rounded-md">
-                      <p className="text-yellow-700">
-                        This question has no options available.
-                      </p>
-                    </div>
-                  ) : (
-                    currentQuestion.options.map((option) => (
-                      <div
-                        key={option.id || Math.random()}
-                        onClick={() =>
-                          !showAnswer &&
-                          handleAnswerSelect(currentQuestion.id, option.id)
-                        }
-                        className={`p-3 border rounded-md cursor-pointer flex items-center ${
-                          userAnswer === option.id
-                            ? isCorrect
-                              ? "bg-green-50 border-green-300"
-                              : showAnswer
-                              ? "bg-red-50 border-red-300"
-                              : "bg-indigo-50 border-indigo-300"
-                            : showAnswer &&
-                              option.id === currentQuestion.correctAnswer
-                            ? "bg-green-50 border-green-300"
-                            : "hover:bg-gray-50"
-                        }`}
-                      >
-                        <div className="mr-3 font-medium">
-                          {option.id?.toUpperCase() || "?"}
-                        </div>
-                        <div className="flex-1 text-sm md:text-base">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath]}
-                            rehypePlugins={[rehypeKatex, rehypeRaw]}
-                          >
-                            {option.text || "No option text available"}
-                          </ReactMarkdown>
-                        </div>
-                        {userAnswer === option.id && (
-                          <FiCheckSquare
-                            className={
-                              isCorrect ? "text-green-500" : "text-indigo-500"
-                            }
-                          />
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-
-            {/* Subjective Question */}
-            {currentQuestion.type === "subjective" && (
-              <div className="mt-3">
-                <textarea
-                  placeholder="Write your answer here..."
-                  value={userAnswer || ""}
-                  onChange={(e) =>
-                    handleAnswerSelect(currentQuestion.id, e.target.value)
+            <div className="space-y-2 md:space-y-3 mt-3">
+              {currentQuestion.options.map((option) => (
+                <div
+                  key={option.id || Math.random()}
+                  onClick={() =>
+                    !quizCompleted &&
+                    handleAnswerSelect(currentQuestion.id, option.id)
                   }
-                  disabled={showAnswer}
-                  className="w-full p-3 border rounded-md min-h-24 md:min-h-32"
-                />
-              </div>
-            )}
+                  className={`p-3 border rounded-md cursor-pointer flex items-center ${
+                    userAnswer === option.id
+                      ? quizCompleted
+                        ? userAnswer === currentQuestion.correctAnswer
+                          ? "bg-green-50 border-green-300"
+                          : "bg-red-50 border-red-300"
+                        : "bg-indigo-50 border-indigo-300"
+                      : quizCompleted &&
+                        option.id === currentQuestion.correctAnswer
+                      ? "bg-green-50 border-green-300"
+                      : "hover:bg-gray-50"
+                  }`}
+                >
+                  <div className="mr-3 font-medium">
+                    {option.id?.toUpperCase() || "?"}
+                  </div>
+                  <div className="flex-1">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkMath]}
+                      rehypePlugins={[rehypeKatex, rehypeRaw]}
+                    >
+                      {option.text}
+                    </ReactMarkdown>
+                  </div>
+                  {userAnswer === option.id && !quizCompleted && (
+                    <FiCheckSquare className="text-indigo-500" />
+                  )}
+                  {quizCompleted &&
+                    (userAnswer === option.id ||
+                      option.id === currentQuestion.correctAnswer) && (
+                      <FiCheckSquare
+                        className={
+                          option.id === currentQuestion.correctAnswer
+                            ? "text-green-500"
+                            : "text-red-500"
+                        }
+                      />
+                    )}
+                </div>
+              ))}
+            </div>
 
             {/* Explanation / Sample Answer */}
             {showAnswer && (
               <div className="mt-4 p-3 md:p-4 bg-blue-50 border border-blue-200 rounded-md">
-                <h5 className="font-medium text-blue-800 mb-2">
-                  {currentQuestion.type === "mcq"
-                    ? "Explanation"
-                    : "Sample Answer"}
-                </h5>
+                <h5 className="font-medium text-blue-800 mb-2">Explanation</h5>
                 <div className="text-blue-700 text-sm md:text-base">
                   <ReactMarkdown
                     remarkPlugins={[remarkMath]}
                     rehypePlugins={[rehypeKatex, rehypeRaw]}
                   >
-                    {currentQuestion.type === "mcq"
-                      ? currentQuestion.explanation ||
-                        "No explanation provided."
-                      : currentQuestion.sampleAnswer ||
-                        "No sample answer provided."}
+                    {currentQuestion.explanation || "No explanation provided."}
                   </ReactMarkdown>
                 </div>
               </div>
@@ -255,15 +339,8 @@ const QuizView = ({
             </button>
 
             <button
-              onClick={toggleShowAnswer}
-              className="px-3 md:px-4 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition-colors"
-            >
-              {showAnswer ? "Hide Answer" : "Show Answer"}
-            </button>
-
-            <button
               onClick={handleNextQuestion}
-              className="px-2 py-1.5 md:px-3 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 flex items-center rounded-md"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center"
             >
               {currentQuestionIndex < questions.length - 1 ? (
                 <>

@@ -4,7 +4,7 @@
  */
 
 // Quiz Generation Prompt
-export const QUIZ_GENERATION_PROMPT = `Generate a quiz with 10 questions (8 multiple choice, 2 subjective) based on the notes provided.
+export const QUIZ_GENERATION_PROMPT = `Generate a quiz with 10 MCQ questions based on the notes provided.
 
 The notes might be in Markdown format with proper headings, lists, and math formulas. Please analyze the content carefully to identify key concepts, definitions, formulas, and examples from which to create questions.
 
@@ -18,21 +18,18 @@ IMPORTANT FORMATTING INSTRUCTIONS:
 
 Each question object in the array should have:
 - "id": a unique identifier (e.g., "q1", "q2", etc.)
-- "type": either "mcq" or "subjective"
 - "question": the question text (can include markdown and LaTeX math)
 - For MCQ questions, include:
   - "options": an array of objects, each with "id" (a, b, c, d) and "text" (can include markdown and LaTeX math)
   - "correctAnswer": the id of the correct option
   - "explanation": why the answer is correct (can include markdown and LaTeX math)
-- For subjective questions, include:
-  - "sampleAnswer": a model answer (can include markdown and LaTeX math)
+
 
 Here are some of the example of the expected JSON structure with proper markdown and LaTeX formatting:
 
 [
   {
       "id": "q1",
-      "type": "mcq",
       "question": "What is the radian equivalent of $60^\\circ$?",
       "options": [
         {"id": "a", "text": "$\\frac{\\pi}{6}$"},
@@ -42,13 +39,7 @@ Here are some of the example of the expected JSON structure with proper markdown
       ],
       "correctAnswer": "c",
       "explanation": "To convert degrees to radians, we multiply by $\\frac{\\pi}{180}$. So, $60^\\circ \\times \\frac{\\pi}{180} = \\frac{\\pi}{3}$."
-    },
-  {
-    "id": "q2",
-    "type": "subjective",
-    "question": "Explain the concept of limits in calculus and write the formal definition of the limit $\\lim_{x \\to a} f(x) = L$.",
-    "sampleAnswer": "A limit describes the value a function approaches as the input approaches a certain value. Formally, we say $\\lim_{x \\to a} f(x) = L$ if for every $\\epsilon > 0$, there exists a $\\delta > 0$ such that if $0 < |x - a| < \\delta$, then $|f(x) - L| < \\epsilon$. This means that we can make $f(x)$ arbitrarily close to $L$ by making $x$ sufficiently close to $a$."
-  }
+    }
 ]
 
 Now, based on the following notes, create 10 questions:

@@ -21,6 +21,7 @@ const QuizPage = () => {
     resetQuiz,
     getQuizScore,
     loadQuiz,
+    setQuizCompleted,
   } = useQuiz();
 
   // Load quiz from URL parameter or localStorage if available
@@ -41,6 +42,10 @@ const QuizPage = () => {
 
         if (quiz) {
           loadQuiz(quiz);
+          // If the quiz has already been attempted, set quizCompleted to true
+          if (quiz.attempted) {
+            setQuizCompleted(true);
+          }
           // Clear the stored quiz ID after loading
           localStorage.removeItem("currentQuizId");
         }

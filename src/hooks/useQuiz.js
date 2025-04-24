@@ -122,6 +122,62 @@ const useQuiz = () => {
         setCurrentQuestionIndex((prev) => prev + 1);
         setShowAnswer(false);
       } else if (!quizCompleted) {
+        // Calculate scores for each question
+        const questionScores = quizResult.quizQuestions.map(
+          (question, index) => {
+            const isCorrect =
+              userAnswers[question.id] === question.correctAnswer;
+            return {
+              questionNumber: index + 1,
+              correct: isCorrect,
+              userAnswer: userAnswers[question.id],
+              correctAnswer: question.correctAnswer,
+              score: isCorrect ? 1 : 0,
+            };
+          }
+        );
+
+        const totalScore = questionScores.reduce((sum, q) => sum + q.score, 0);
+
+        // Update quiz result with completion data
+        const updatedQuiz = {
+          ...quizResult,
+          attempted: true,
+          questionScores,
+          score: {
+            total: quizResult.quizQuestions.length,
+            obtained: totalScore,
+            percentage: Math.round(
+              (totalScore / quizResult.quizQuestions.length) * 100
+            ),
+          },
+        };
+
+        console.log("Saving quiz with score:", updatedQuiz.score);
+        console.log("Full quiz object:", updatedQuiz);
+
+        // Update in storage
+        const storedQuizzes = getStoredQuizzes();
+        console.log("Current stored quizzes:", storedQuizzes);
+
+        const updatedQuizzes = storedQuizzes.map((q) =>
+          q.id === updatedQuiz.id ? updatedQuiz : q
+        );
+
+        localStorage.setItem(
+          "notesQuizResults",
+          JSON.stringify(updatedQuizzes)
+        );
+        console.log("Updated localStorage with new quiz score");
+
+        // Verify it was saved correctly
+        const verifyQuizzes = JSON.parse(
+          localStorage.getItem("notesQuizResults") || "[]"
+        );
+        const savedQuiz = verifyQuizzes.find((q) => q.id === updatedQuiz.id);
+        console.log("Verified saved quiz:", savedQuiz);
+
+        setQuizResult(updatedQuiz);
         setQuizCompleted(true);
       }
     }
@@ -171,6 +227,28 @@ const useQuiz = () => {
    * @param {Object} quiz - The saved quiz to load
    */
   const loadQuiz = (quiz) => {
+    // If quiz has been attempted, don't allow another attempt
+    if (quiz.attempted) {
+      setQuizResult(quiz);
+      setQuizCompleted(true);
+
+      // Get the user's previous answers to show in review mode
+      const previousAnswers = {};
+      quiz.questionScores?.forEach((q) => {
+        if (q.userAnswer) {
+          const question = quiz.quizQuestions.find(
+            (question, index) => index === q.questionNumber - 1
+          );
+          if (question) {
+            previousAnswers[question.id] = q.userAnswer;
+          }
+        }
+      });
+
+      setUserAnswers(previousAnswers);
+      return;
+    }
+
     setQuizResult(quiz);
     resetQuiz();
   };
@@ -181,22 +259,18 @@ const useQuiz = () => {
    */
   const getQuizScore = () => {
     if (!quizResult?.quizQuestions)
-      return { correct: 0, total: 0, percentage: 0 };
+      return { obtained: 0, total: 0, percentage: 0 };
 
-    const mcqQuestions = quizResult.quizQuestions.filter(
-      (q) => q?.type === "mcq"
-    );
-    const correct = Object.keys(userAnswers).filter((qId) => {
+    const total = quizResult.quizQuestions.length;
+    const obtained = Object.keys(userAnswers).filter((qId) => {
       const q = quizResult.quizQuestions.find((q) => q.id === qId);
-      return q?.type === "mcq" && userAnswers[qId] === q?.correctAnswer;
+      return userAnswers[qId] === q?.correctAnswer;
     }).length;
 
     return {
-      correct,
-      total: mcqQuestions.length,
-      percentage: mcqQuestions.length
-        ? Math.round((correct / mcqQuestions.length) * 100)
-        : 0,
+      obtained,
+      total,
+      percentage: total ? Math.round((obtained / total) * 100) : 0,
     };
   };
 
@@ -219,6 +293,7 @@ const useQuiz = () => {
     loadQuiz,
     getQuizScore,
     setQuizResult,
+    setQuizCompleted,
   };
 };
 

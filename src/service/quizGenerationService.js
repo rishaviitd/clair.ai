@@ -125,6 +125,19 @@ export const generateQuizFromNotes = async (analysisResult, apiKey) => {
         sourceData: analysisResult,
         timestamp: new Date().toISOString(),
         id: `quiz_${Date.now()}`,
+        attempted: false,
+        score: {
+          obtained: 0,
+          total: structuredQuestions.length,
+          percentage: 0,
+        },
+        questionScores: structuredQuestions.map((question, index) => ({
+          questionNumber: index + 1,
+          correct: false,
+          userAnswer: null,
+          correctAnswer: question.correctAnswer,
+          score: 0,
+        })),
       };
 
       // Store the raw response for troubleshooting

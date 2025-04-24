@@ -1,4 +1,5 @@
 import React from "react";
+import { FiBookOpen } from "react-icons/fi";
 
 /**
  * Component for displaying saved quizzes
@@ -24,21 +25,36 @@ const SavedQuizzes = ({ savedQuizzes, onLoadQuiz }) => {
             <div key={quiz.id} className="border rounded-md p-4 bg-white">
               <div className="flex justify-between items-center">
                 <div>
-                  <h4 className="font-medium">
-                    Quiz: {quiz.sourceData?.fileName || "Notes Analysis"}
+                  <h4 className="font-medium text-gray-800">
+                    {quiz.sourceData?.fileName || "Notes Analysis"}
                   </h4>
-                  <p className="text-xs text-gray-500">
-                    {new Date(quiz.timestamp).toLocaleString()}
-                  </p>
+                  {quiz.attempted ? (
+                    <div className="text-sm text-gray-600 mt-1">
+                      Score:{" "}
+                      <span className="font-medium">
+                        {quiz.score.obtained}/{quiz.score.total}
+                      </span>
+                      <span className="text-gray-500 ml-1">
+                        ({quiz.score.percentage}%)
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-500 mt-1">
+                      Not attempted yet
+                    </p>
+                  )}
                 </div>
-                <div className="flex space-x-2">
-                  <button
-                    onClick={() => onLoadQuiz(quiz)}
-                    className="px-3 py-1 bg-indigo-600 text-white text-sm rounded hover:bg-indigo-700 transition-colors"
-                  >
-                    Take Quiz
-                  </button>
-                </div>
+                <button
+                  onClick={() => onLoadQuiz(quiz)}
+                  className={`px-3 py-1.5 text-white text-sm rounded-md transition-colors flex items-center ${
+                    quiz.attempted
+                      ? "bg-indigo-600 hover:bg-indigo-700"
+                      : "bg-green-600 hover:bg-green-700"
+                  }`}
+                >
+                  <FiBookOpen className="mr-2" />
+                  {quiz.attempted ? "Review" : "Start"}
+                </button>
               </div>
             </div>
           ))}
