@@ -5,6 +5,8 @@ import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
+import { FiArrowLeft } from "react-icons/fi";
+import { useNavigate, useLocation } from "react-router-dom";
 
 /**
  * StructuredNotes component for displaying raw Gemini response
@@ -19,6 +21,9 @@ const StructuredNotes = ({
   onGenerateQuiz,
   generatingQuiz = false,
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   // Check if we have valid content
   if (!result || (!result.markdown && !result.description)) {
     return (
@@ -28,10 +33,26 @@ const StructuredNotes = ({
     );
   }
 
+  const handleBackToDashboard = () => {
+    // If we came from the upload page, navigate back with state
+    if (location.state?.fromUpload) {
+      navigate("/?tab=saved", { state: { returnFromNotes: true } });
+    } else {
+      navigate("/?tab=saved");
+    }
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-md">
       <div className="flex justify-between items-center mb-6 pb-4 border-b">
-        <h4 className="text-lg font-semibold text-gray-800">Notes</h4>
+        <div className="mb-6 bg-white p-4 rounded-lg shadow-sm flex items-center">
+          <button
+            onClick={handleBackToDashboard}
+            className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
+          >
+            <FiArrowLeft className="mr-1" /> Back
+          </button>
+        </div>{" "}
         <div className="flex gap-2">
           <button
             onClick={() => onGenerateQuiz(result)}

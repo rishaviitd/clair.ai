@@ -83,9 +83,6 @@ const QuizView = ({
   return (
     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
-        <h3 className="text-lg md:text-xl font-bold text-indigo-700 truncate max-w-full sm:max-w-[60%]">
-          Quiz: {quizResult.sourceData?.fileName || "Notes Analysis"}
-        </h3>
         <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
           Question {currentQuestionIndex + 1} of {questions.length}
         </div>
@@ -136,16 +133,7 @@ const QuizView = ({
         <div className="space-y-4 md:space-y-6">
           {/* Question */}
           <div>
-            <div className="flex justify-between">
-              <span className="text-xs text-gray-500">
-                {currentQuestion.topic || "General"}
-              </span>
-              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800">
-                {currentQuestion.type === "mcq"
-                  ? "Multiple Choice"
-                  : "Subjective"}
-              </span>
-            </div>
+            <div className="flex justify-between"></div>
             <h4 className="text-md md:text-lg font-medium mt-1 mb-3 md:mb-4">
               <ReactMarkdown
                 remarkPlugins={[remarkMath]}

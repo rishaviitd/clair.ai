@@ -74,15 +74,6 @@ const NotesView = () => {
     }
   };
 
-  const handleBackToDashboard = () => {
-    // If we came from the upload page, navigate back with state
-    if (location.state?.fromUpload) {
-      navigate("/", { state: { returnFromNotes: true } });
-    } else {
-      navigate("/");
-    }
-  };
-
   if (loading) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -118,18 +109,6 @@ const NotesView = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-6 pb-24 md:pb-6 bg-gray-100 min-h-screen">
-      <div className="mb-6 bg-white p-4 rounded-lg shadow-sm flex items-center">
-        <button
-          onClick={handleBackToDashboard}
-          className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
-        >
-          <FiArrowLeft className="mr-1" /> Back
-        </button>
-        <h2 className="text-xl font-bold ml-4 text-gray-800">
-          {noteData.fileName || "Analysis Results"}
-        </h2>
-      </div>
-
       <StructuredNotes
         result={noteData}
         onGenerateQuiz={() => handleGenerateQuiz(noteData)}

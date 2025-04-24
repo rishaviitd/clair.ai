@@ -48,6 +48,10 @@ const QuizPage = () => {
     }
   }, [location, quizResult, loadQuiz]);
 
+  const handleBack = () => {
+    navigate("/?tab=saved");
+  };
+
   // If no quiz is loaded, show a message
   if (!quizResult) {
     return (
@@ -55,10 +59,10 @@ const QuizPage = () => {
         <div className="text-center py-8">
           <p className="text-gray-600">No quiz is currently loaded.</p>
           <button
-            onClick={() => navigate("/")}
+            onClick={handleBack}
             className="mt-4 inline-flex items-center text-indigo-600 hover:text-indigo-800"
           >
-            <FiArrowLeft className="mr-2" /> Back to Upload
+            <FiArrowLeft className="mr-2" /> Back
           </button>
         </div>
       </div>
@@ -69,12 +73,11 @@ const QuizPage = () => {
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6 flex items-center">
         <button
-          onClick={() => navigate("/")}
+          onClick={handleBack}
           className="inline-flex items-center text-indigo-600 hover:text-indigo-800"
         >
           <FiArrowLeft className="mr-2" /> Back
         </button>
-        <h1 className="text-2xl font-semibold text-gray-800 ml-4">Quiz</h1>
       </div>
 
       <QuizView

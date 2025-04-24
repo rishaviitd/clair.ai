@@ -137,8 +137,17 @@ const ImageUpload = ({ initialView = "upload" }) => {
       setSavedResults(storedResults);
       setSavedQuizzes(storedQuizzes);
 
-      // Check for quizId in URL parameters
+      // Check for tab parameter in URL and set view accordingly
       const params = new URLSearchParams(location.search);
+      const tabParam = params.get("tab");
+
+      if (tabParam === "saved") {
+        setView("saved");
+      } else if (tabParam === "upload") {
+        setView("upload");
+      }
+
+      // Check for quizId in URL parameters
       const quizId = params.get("quizId");
 
       if (quizId) {
