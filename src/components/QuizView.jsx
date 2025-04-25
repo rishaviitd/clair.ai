@@ -5,6 +5,7 @@ import {
   FiCheckSquare,
   FiAward,
   FiBookOpen,
+  FiRepeat,
 } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
 import remarkMath from "remark-math";
@@ -27,8 +28,20 @@ const QuizView = ({
   toggleShowAnswer,
   resetQuiz,
   getQuizScore,
+  generateNextQuiz,
 }) => {
   const [debugMode, setDebugMode] = useState(false);
+  const [generatingNextQuiz, setGeneratingNextQuiz] = useState(false);
+
+  // Handle generating the next adaptive quiz
+  const handleGenerateNextQuiz = async () => {
+    setGeneratingNextQuiz(true);
+    try {
+      await generateNextQuiz();
+    } finally {
+      setGeneratingNextQuiz(false);
+    }
+  };
 
   // If quiz is still loading
   if (!quizResult) {
@@ -80,12 +93,22 @@ const QuizView = ({
     userAnswer === currentQuestion.correctAnswer;
   const quizScore = getQuizScore();
 
+  // Check if this is an adaptive quiz
+  const isAdaptive = quizResult.isAdaptive || false;
+  const quizNumber = quizResult.quizNumber || 1;
+
   return (
     <div className="bg-white p-4 md:p-6 rounded-lg shadow-sm">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
         <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
           Question {currentQuestionIndex + 1} of {questions.length}
         </div>
+
+        {isAdaptive && (
+          <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+            Adaptive Quiz #{quizNumber}
+          </div>
+        )}
       </div>
 
       {debugMode && (
@@ -232,7 +255,26 @@ const QuizView = ({
             })}
           </div>
 
-          <div className="flex justify-center mt-8">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 mt-8">
+            {generateNextQuiz && (
+              <button
+                onClick={handleGenerateNextQuiz}
+                disabled={generatingNextQuiz}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
+              >
+                {generatingNextQuiz ? (
+                  <>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                    <span>Generating Next Quiz...</span>
+                  </>
+                ) : (
+                  <>
+                    <FiRepeat className="mr-2" /> Generate Next Quiz
+                  </>
+                )}
+              </button>
+            )}
+
             <button
               onClick={() => window.history.back()}
               className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors flex items-center"

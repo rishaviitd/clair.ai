@@ -182,12 +182,34 @@ const ImageUpload = ({ initialView = "upload" }) => {
 
   // Handler for generating a quiz and navigating to quiz page
   const handleGenerateQuizAndView = async (result) => {
-    const quiz = await handleGenerateQuiz(result);
-    if (quiz && quiz.success) {
-      // Store the quiz ID in localStorage to persist between page navigation
-      localStorage.setItem("currentQuizId", quiz.id);
-      // Navigate to the quiz page
-      navigate("/quiz");
+    try {
+      console.log("Starting quiz generation for result:", result);
+      const quiz = await handleGenerateQuiz(result);
+      console.log("Quiz generation result:", quiz);
+
+      if (quiz && quiz.success) {
+        // Store the quiz ID in localStorage to persist between page navigation
+        localStorage.setItem("currentQuizId", quiz.id);
+        // Navigate to the quiz page
+        navigate("/quiz");
+      } else {
+        // Handle error case
+        const errorMessage =
+          quiz?.error || "Failed to generate quiz. Please try again.";
+        console.error("Quiz generation failed:", errorMessage);
+
+        // Set error to display to the user
+        setError(errorMessage);
+
+        // Display alert for immediate feedback
+        alert(`Quiz generation failed: ${errorMessage}`);
+      }
+    } catch (error) {
+      console.error("Error in quiz generation:", error);
+      const errorMessage =
+        error.message || "Unexpected error in quiz generation";
+      setError(errorMessage);
+      alert(`Quiz generation error: ${errorMessage}`);
     }
   };
 

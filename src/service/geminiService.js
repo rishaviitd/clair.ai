@@ -10,6 +10,7 @@
 export { processImageWithTwoStepGemini as processImageWithGemini } from "./twoStepNotesProcessingService";
 export { processBatchImagesWithTwoStepGemini } from "./twoStepNotesProcessingService";
 export { generateQuizFromNotes } from "./quizGenerationService";
+export { generateAdaptiveQuiz } from "./adaptiveQuizService";
 export {
   storeAnalysisResult,
   storeQuizResult,

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   generateQuizFromNotes,
+  generateAdaptiveQuiz,
   getStoredQuizzes,
   parseQuestions,
 } from "../service/geminiService";
@@ -41,9 +42,10 @@ const useQuiz = () => {
   /**
    * Generates a quiz from analysis results
    * @param {Object} result - The analysis result to generate a quiz from
+   * @param {boolean} useAdaptive - Whether to use adaptive quiz generation
    * @returns {Promise<Object>} The generated quiz
    */
-  const handleGenerateQuiz = async (result) => {
+  const handleGenerateQuiz = async (result, useAdaptive = true) => {
     setGeneratingQuiz(true);
     setQuizResult(null);
     setError("");
@@ -55,10 +57,59 @@ const useQuiz = () => {
 
     try {
       console.log(
-        "Starting quiz generation for:",
+        `Starting ${
+          useAdaptive ? "adaptive" : "standard"
+        } quiz generation for:`,
         result.fileName || "Analysis result"
       );
-      const quiz = await generateQuizFromNotes(result);
+      console.log("Full result object:", JSON.stringify(result, null, 2));
+
+      // Check if result has necessary data
+      if (
+        !result ||
+        (!result.structuredData && !result.description && !result.markdown)
+      ) {
+        console.error("Result missing required data for quiz generation");
+        throw new Error(
+          "Notes data is incomplete or missing. Cannot generate quiz."
+        );
+      }
+
+      // Check environment variables
+      console.log("Checking for API key...");
+      if (
+        !import.meta.env.VITE_GEMINI_API_KEY ||
+        import.meta.env.VITE_GEMINI_API_KEY === "your_gemini_api_key_here"
+      ) {
+        console.error("API key is missing or using placeholder value");
+        throw new Error(
+          "Gemini API key is not configured. Please set up your API key."
+        );
+      }
+
+      // Determine if we should use adaptive generation based on whether there are previous quiz attempts
+      const allQuizzes = getStoredQuizzes();
+      const hasAttemptedQuizzes = allQuizzes.some(
+        (quiz) => quiz.sourceData?.id === result.id && quiz.attempted
+      );
+
+      // Use adaptive generation if requested and there are previous quiz attempts
+      console.log(
+        "Using adaptive generation:",
+        useAdaptive && hasAttemptedQuizzes
+      );
+      let quiz;
+      try {
+        quiz =
+          useAdaptive && hasAttemptedQuizzes
+            ? await generateAdaptiveQuiz(result)
+            : await generateQuizFromNotes(result);
+      } catch (apiError) {
+        console.error("API error during quiz generation:", apiError);
+        throw new Error(`Error calling Gemini API: ${apiError.message}`);
+      }
+
+      console.log("Quiz generation response:", quiz);
 
       if (quiz.success) {
         console.log("Quiz generation successful");
@@ -107,7 +158,10 @@ const useQuiz = () => {
       const errorMsg = `Error generating quiz: ${err.message}`;
       console.error(errorMsg, err);
       setError(errorMsg);
-      return null;
+      return {
+        success: false,
+        error: errorMsg,
+      };
     } finally {
       setGeneratingQuiz(false);
     }
@@ -274,6 +328,19 @@ const useQuiz = () => {
     };
   };
 
+  /**
+   * Generates a follow-up adaptive quiz after completing one
+   * Only available if a quiz has been completed
+   */
+  const generateFollowUpQuiz = async () => {
+    if (!quizResult || !quizResult.sourceData) {
+      setError("No source data available to generate a follow-up quiz");
+      return null;
+    }
+
+    return handleGenerateQuiz(quizResult.sourceData, true);
+  };
+
   return {
     quizResult,
     selectedResult,
@@ -294,6 +361,7 @@ const useQuiz = () => {
     getQuizScore,
     setQuizResult,
     setQuizCompleted,
+    generateFollowUpQuiz,
   };
 };
 

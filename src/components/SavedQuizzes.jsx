@@ -25,9 +25,16 @@ const SavedQuizzes = ({ savedQuizzes, onLoadQuiz }) => {
             <div key={quiz.id} className="border rounded-md p-4 bg-white">
               <div className="flex justify-between items-center">
                 <div>
-                  <h4 className="font-medium text-gray-800">
-                    {quiz.sourceData?.fileName || "Notes Analysis"}
-                  </h4>
+                  <div className="flex items-center">
+                    <h4 className="font-medium text-gray-800">
+                      {quiz.sourceData?.fileName || "Notes Analysis"}
+                    </h4>
+                    {quiz.isAdaptive && (
+                      <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                        Adaptive #{quiz.quizNumber || 1}
+                      </span>
+                    )}
+                  </div>
                   {quiz.attempted ? (
                     <div className="text-sm text-gray-600 mt-1">
                       Score:{" "}

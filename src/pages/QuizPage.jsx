@@ -22,6 +22,8 @@ const QuizPage = () => {
     getQuizScore,
     loadQuiz,
     setQuizCompleted,
+    generateFollowUpQuiz,
+    generatingQuiz,
   } = useQuiz();
 
   // Load quiz from URL parameter or localStorage if available
@@ -55,6 +57,20 @@ const QuizPage = () => {
 
   const handleBack = () => {
     navigate("/?tab=saved");
+  };
+
+  // Handler for generating a follow-up adaptive quiz
+  const handleGenerateNextQuiz = async () => {
+    // Generate the adaptive follow-up quiz
+    const newQuiz = await generateFollowUpQuiz();
+
+    if (newQuiz) {
+      // Store the current quiz ID in localStorage and redirect to the new quiz
+      localStorage.setItem("currentQuizId", newQuiz.id);
+
+      // Reload the page to reset the quiz state completely
+      window.location.href = `/quiz?id=${newQuiz.id}`;
+    }
   };
 
   // If no quiz is loaded, show a message
@@ -97,6 +113,7 @@ const QuizPage = () => {
         toggleShowAnswer={toggleShowAnswer}
         resetQuiz={resetQuiz}
         getQuizScore={getQuizScore}
+        generateNextQuiz={quizCompleted ? handleGenerateNextQuiz : null}
       />
     </div>
   );

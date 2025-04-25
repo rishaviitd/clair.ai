@@ -153,15 +153,38 @@ const SavedResults = ({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        onGenerateQuiz(result);
+                        console.log(
+                          "Generate Quiz button clicked for result:",
+                          result.id
+                        );
+                        console.log(
+                          "Button disabled state:",
+                          generatingQuiz ||
+                            quizzesBySourceId[result.id]?.some(
+                              (quiz) => quiz.attempted
+                            )
+                        );
+                        console.log(
+                          "Attempted quizzes for this result:",
+                          quizzesBySourceId[result.id]?.filter(
+                            (quiz) => quiz.attempted
+                          )
+                        );
+                        try {
+                          onGenerateQuiz(result);
+                        } catch (error) {
+                          console.error("Error calling onGenerateQuiz:", error);
+                        }
                       }}
                       className="p-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors flex items-center justify-center"
+                      /* Temporarily removed disabled state for testing
                       disabled={
                         generatingQuiz ||
                         quizzesBySourceId[result.id]?.some(
                           (quiz) => quiz.attempted
                         )
                       }
+                      */
                       aria-label="Generate Quiz"
                     >
                       {generatingQuiz && result.id === selectedResult?.id ? (
@@ -186,12 +209,19 @@ const SavedResults = ({
                           className="bg-white p-3 rounded-md border border-gray-200 flex flex-col sm:flex-row justify-between sm:items-center"
                         >
                           <div className="mb-2 sm:mb-0">
-                            <div className="text-sm font-medium">
-                              {quiz.attempted
-                                ? `Quiz ${
-                                    quiz.quizNumber || quizIndex + 1
-                                  } Results`
-                                : `Quiz ${quiz.quizNumber || quizIndex + 1}`}
+                            <div className="flex items-center">
+                              <div className="text-sm font-medium">
+                                {quiz.attempted
+                                  ? `Quiz ${
+                                      quiz.quizNumber || quizIndex + 1
+                                    } Results`
+                                  : `Quiz ${quiz.quizNumber || quizIndex + 1}`}
+                              </div>
+                              {quiz.isAdaptive && (
+                                <span className="ml-2 px-2 py-0.5 bg-green-100 text-green-800 text-xs rounded-full">
+                                  Adaptive
+                                </span>
+                              )}
                             </div>
                             {quiz.attempted && (
                               <div className="text-sm text-gray-600">
